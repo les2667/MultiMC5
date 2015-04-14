@@ -111,7 +111,7 @@ public:
 	virtual void setShouldUpdate(bool val) override;
 	virtual std::shared_ptr<Task> createUpdateTask() override;
 
-	virtual std::shared_ptr<LaunchTask> createLaunchTask(AuthSessionPtr account) override;
+	virtual std::shared_ptr<LaunchTask> createLaunchTask(SessionPtr account) override;
 
 	virtual std::shared_ptr<Task> createJarModdingTask() override;
 

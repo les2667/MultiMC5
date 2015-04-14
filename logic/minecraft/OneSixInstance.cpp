@@ -20,6 +20,7 @@
 #include "minecraft/OneSixInstance.h"
 
 #include "minecraft/OneSixUpdate.h"
+#include "minecraft/auth/MojangAuthSession.h"
 #include "minecraft/MinecraftProfile.h"
 #include "minecraft/VersionBuildError.h"
 #include "launch/LaunchTask.h"
@@ -91,7 +92,7 @@ QString replaceTokensIn(QString text, QMap<QString, QString> with)
 	return result;
 }
 
-QStringList OneSixInstance::processMinecraftArgs(AuthSessionPtr session)
+QStringList OneSixInstance::processMinecraftArgs(MojangAuthSessionPtr acc)
 {
 	QString args_pattern = m_version->minecraftArguments;
 	for (auto tweaker : m_version->tweakers)
@@ -101,11 +102,11 @@ QStringList OneSixInstance::processMinecraftArgs(AuthSessionPtr session)
 
 	QMap<QString, QString> token_mapping;
 	// yggdrasil!
-	token_mapping["auth_username"] = session->username;
-	token_mapping["auth_session"] = session->session;
-	token_mapping["auth_access_token"] = session->access_token;
-	token_mapping["auth_player_name"] = session->player_name;
-	token_mapping["auth_uuid"] = session->uuid;
+	token_mapping["auth_username"] = acc->username;
+	token_mapping["auth_session"] = acc->session;
+	token_mapping["auth_access_token"] = acc->access_token;
+	token_mapping["auth_player_name"] = acc->player_name;
+	token_mapping["auth_uuid"] = acc->uuid;
 
 	// blatant self-promotion.
 	token_mapping["profile_name"] = token_mapping["version_name"] = "MultiMC5";
@@ -115,8 +116,8 @@ QStringList OneSixInstance::processMinecraftArgs(AuthSessionPtr session)
 	QString absAssetsDir = QDir("assets/").absolutePath();
 	token_mapping["game_assets"] = AssetsUtils::reconstructAssets(m_version->assets).absolutePath();
 
-	token_mapping["user_properties"] = session->serializeUserProperties();
-	token_mapping["user_type"] = session->user_type;
+	token_mapping["user_properties"] = acc->serializeUserProperties();
+	token_mapping["user_type"] = acc->user_type;
 	// 1.7.3+ assets tokens
 	token_mapping["assets_root"] = absAssetsDir;
 	token_mapping["assets_index_name"] = m_version->assets;
@@ -129,8 +130,10 @@ QStringList OneSixInstance::processMinecraftArgs(AuthSessionPtr session)
 	return parts;
 }
 
-std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(AuthSessionPtr session)
+std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(SessionPtr acc)
 {
+	MojangAuthSessionPtr account = std::dynamic_pointer_cast<MojangAuthSession>(acc);
+
 	QString launchScript;
 	QIcon icon = ENV.icons()->getIcon(iconKey());
 	auto pixmap = icon.pixmap(128, 128);
@@ -194,7 +197,7 @@ std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(AuthSessionPtr sess
 	}
 
 	// generic minecraft params
-	for (auto param : processMinecraftArgs(session))
+	for (auto param : processMinecraftArgs(account))
 	{
 		launchScript += "param " + param + "\n";
 	}
@@ -214,8 +217,8 @@ std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(AuthSessionPtr sess
 
 	// legacy auth
 	{
-		launchScript += "userName " + session->player_name + "\n";
-		launchScript += "sessionId " + session->session + "\n";
+		launchScript += "userName " + account->player_name + "\n";
+		launchScript += "sessionId " + account->session + "\n";
 	}
 
 	// native libraries (mostly LWJGL)
@@ -251,7 +254,7 @@ std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(AuthSessionPtr sess
 		process->appendStep(step);
 	}
 	// if we aren't in offline mode,.
-	if(session->status != AuthSession::PlayableOffline)
+	if(account->status != MojangAuthSession::PlayableOffline)
 	{
 		process->appendStep(std::make_shared<Update>(pptr));
 	}
@@ -275,18 +278,18 @@ std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(AuthSessionPtr sess
 		step->setWorkingDirectory(minecraftRoot());
 		process->appendStep(step);
 	}
-	if (session)
+	if (account)
 	{
 		QMap<QString, QString> filter;
-		if (session->session != "-")
-			filter[session->session] = tr("<SESSION ID>");
-		filter[session->access_token] = tr("<ACCESS TOKEN>");
-		filter[session->client_token] = tr("<CLIENT TOKEN>");
-		filter[session->uuid] = tr("<PROFILE ID>");
-		filter[session->player_name] = tr("<PROFILE NAME>");
+		if (account->session != "-")
+			filter[account->session] = tr("<SESSION ID>");
+		filter[account->access_token] = tr("<ACCESS TOKEN>");
+		filter[account->client_token] = tr("<CLIENT TOKEN>");
+		filter[account->uuid] = tr("<PROFILE ID>");
+		filter[account->player_name] = tr("<PROFILE NAME>");
 
-		auto i = session->u.properties.begin();
-		while (i != session->u.properties.end())
+		auto i = account->u.properties.begin();
+		while (i != account->u.properties.end())
 		{
 			filter[i.value()] = "<" + i.key().toUpper() + ">";
 			++i;

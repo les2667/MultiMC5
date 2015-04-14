@@ -43,7 +43,7 @@ public:
 	{
 		return instanceRoot();
 	};
-	virtual std::shared_ptr<LaunchTask> createLaunchTask(AuthSessionPtr)
+	virtual std::shared_ptr<LaunchTask> createLaunchTask(SessionPtr)
 	{
 		return nullptr;
 	}

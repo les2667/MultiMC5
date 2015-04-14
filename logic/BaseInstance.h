@@ -24,13 +24,13 @@
 
 #include "settings/INIFile.h"
 #include "BaseVersionList.h"
-#include "auth/MojangAccount.h"
 #include "launch/MessageLevel.h"
 
 class QDir;
 class Task;
 class LaunchTask;
 class BaseInstance;
+using SessionPtr = std::shared_ptr<class BaseSession>;
 
 // pointer for lazy people
 typedef std::shared_ptr<BaseInstance> InstancePtr;
@@ -150,7 +150,7 @@ public:
 	virtual std::shared_ptr<Task> createUpdateTask() = 0;
 
 	/// returns a valid launcher (task container)
-	virtual std::shared_ptr<LaunchTask> createLaunchTask(AuthSessionPtr account) = 0;
+	virtual std::shared_ptr<LaunchTask> createLaunchTask(SessionPtr account) = 0;
 
 	/*!
 	 * Returns a task that should be done right before launch
@@ -158,11 +158,11 @@ public:
 	 */
 	virtual std::shared_ptr<Task> createJarModdingTask() = 0;
 
-
 	/*!
 	 * Create envrironment variables for running the instance
 	 */
 	virtual QProcessEnvironment createEnvironment() = 0;
+	/// returns a valid process, ready for launch with the given account.
 
 	/*!
 	 * does any necessary cleanups after the instance finishes. also runs before\

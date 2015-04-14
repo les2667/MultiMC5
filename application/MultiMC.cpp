@@ -20,7 +20,7 @@
 #include <QDebug>
 
 #include "InstanceList.h"
-#include "auth/MojangAccountList.h"
+#include "auth/AccountModel.h"
 #include "icons/IconList.h"
 #include "minecraft/LwjglVersionList.h"
 #include "minecraft/MinecraftVersionList.h"
@@ -223,11 +223,7 @@ MultiMC::MultiMC(int &argc, char **argv, bool test_mode) : QApplication(argc, ar
 	connect(InstDirSetting.get(), SIGNAL(SettingChanged(const Setting &, QVariant)),
 			m_instances.get(), SLOT(on_InstFolderChanged(const Setting &, QVariant)));
 
-	// and accounts
-	m_accounts.reset(new MojangAccountList(this));
-	qDebug() << "Loading accounts...";
-	m_accounts->setListFilePath("accounts.json", true);
-	m_accounts->loadList();
+	m_accountsModel.reset(new AccountModel);
 
 	// init the http meta cache
 	ENV.initHttpMetaCache(rootPath, staticDataPath);

@@ -33,6 +33,7 @@
 #include <launch/steps/TextPrint.h>
 #include "minecraft/ModList.h"
 #include <MMCZip.h>
+#include "minecraft/auth/MojangAuthSession.h"
 
 LegacyInstance::LegacyInstance(SettingsObjectPtr globalSettings, SettingsObjectPtr settings, const QString &rootDir)
 	: MinecraftInstance(globalSettings, settings, rootDir)
@@ -102,8 +103,10 @@ std::shared_ptr<Task> LegacyInstance::createUpdateTask()
 	return std::shared_ptr<Task>(new LegacyUpdate(this, this));
 }
 
-std::shared_ptr<LaunchTask> LegacyInstance::createLaunchTask(AuthSessionPtr session)
+std::shared_ptr<LaunchTask> LegacyInstance::createLaunchTask(SessionPtr session)
 {
+	MojangAuthSessionPtr mojangSession = std::dynamic_pointer_cast<MojangAuthSession>(session);
+
 	QString launchScript;
 	QIcon icon = ENV.icons()->getIcon(iconKey());
 	auto pixmap = icon.pixmap(128, 128);
@@ -122,8 +125,8 @@ std::shared_ptr<LaunchTask> LegacyInstance::createLaunchTask(AuthSessionPtr sess
 
 		QString lwjgl = QDir(m_lwjglFolderSetting->get().toString() + "/" + lwjglVersion())
 							.absolutePath();
-		launchScript += "userName " + session->player_name + "\n";
-		launchScript += "sessionId " + session->session + "\n";
+		launchScript += "userName " + mojangSession->player_name + "\n";
+		launchScript += "sessionId " + mojangSession->session + "\n";
 		launchScript += "windowTitle " + windowTitle() + "\n";
 		launchScript += "windowParams " + windowParams + "\n";
 		launchScript += "lwjgl " + lwjgl + "\n";
@@ -144,7 +147,7 @@ std::shared_ptr<LaunchTask> LegacyInstance::createLaunchTask(AuthSessionPtr sess
 		process->appendStep(step);
 	}
 	// if we aren't in offline mode,.
-	if(session->status != AuthSession::PlayableOffline)
+	if(mojangSession->status != MojangAuthSession::PlayableOffline)
 	{
 		process->appendStep(std::make_shared<Update>(pptr));
 	}
@@ -168,18 +171,18 @@ std::shared_ptr<LaunchTask> LegacyInstance::createLaunchTask(AuthSessionPtr sess
 		step->setWorkingDirectory(minecraftRoot());
 		process->appendStep(step);
 	}
-	if (session)
+	if (mojangSession)
 	{
 		QMap<QString, QString> filter;
-		if (session->session != "-")
-			filter[session->session] = tr("<SESSION ID>");
-		filter[session->access_token] = tr("<ACCESS TOKEN>");
-		filter[session->client_token] = tr("<CLIENT TOKEN>");
-		filter[session->uuid] = tr("<PROFILE ID>");
-		filter[session->player_name] = tr("<PROFILE NAME>");
+		if (mojangSession->session != "-")
+			filter[mojangSession->session] = tr("<SESSION ID>");
+		filter[mojangSession->access_token] = tr("<ACCESS TOKEN>");
+		filter[mojangSession->client_token] = tr("<CLIENT TOKEN>");
+		filter[mojangSession->uuid] = tr("<PROFILE ID>");
+		filter[mojangSession->player_name] = tr("<PROFILE NAME>");
 
-		auto i = session->u.properties.begin();
-		while (i != session->u.properties.end())
+		auto i = mojangSession->u.properties.begin();
+		while (i != mojangSession->u.properties.end())
 		{
 			filter[i.value()] = "<" + i.key().toUpper() + ">";
 			++i;
