@@ -1108,7 +1108,7 @@ void MainWindow::instanceFromVersion(QString instName, QString instGroup, QStrin
 
 void MainWindow::finalizeInstance(InstancePtr inst)
 {
-	if (MMC->accountsModel()->hasAny("minecraft"))
+	if (MMC->accountsModel()->hasAny("mojang"))
 	{
 		ProgressDialog loadDialog(this);
 		auto update = inst->createUpdateTask();
