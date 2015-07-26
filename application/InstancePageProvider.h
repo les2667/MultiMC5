@@ -43,7 +43,6 @@ public:
 			values.append(new ScreenshotsPage(PathCombine(onesix->minecraftRoot(), "screenshots")));
 			values.append(new InstanceSettingsPage(onesix.get()));
 			values.append(new OtherLogsPage(onesix->minecraftRoot()));
-			values.append(new AccountListPage(inst));
 		}
 		std::shared_ptr<LegacyInstance> legacy = std::dynamic_pointer_cast<LegacyInstance>(inst);
 		if(legacy)
@@ -61,7 +60,6 @@ public:
 			values.append(new ScreenshotsPage(PathCombine(legacy->minecraftRoot(), "screenshots")));
 			values.append(new InstanceSettingsPage(legacy.get()));
 			values.append(new OtherLogsPage(legacy->minecraftRoot()));
-			values.append(new AccountListPage(inst));
 			return values;
 		}
 		return values;

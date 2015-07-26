@@ -78,22 +78,19 @@ public:
 
 	BaseAccount *getAccount(const QModelIndex &index) const;
 	template<typename T>
-	BaseAccount *getAccount(const InstancePtr instance = nullptr) const
+	BaseAccount *getAccount() const
 	{
-		return getAccount(type<T>(), instance);
+		return getAccount(type<T>());
 	}
-	BaseAccount *getAccount(BaseAccountType *type, const InstancePtr instance = nullptr) const;
+	BaseAccount *getAccount(BaseAccountType *type) const;
 
-	void setGlobalDefault(BaseAccount *account);
-	void setInstanceDefault(InstancePtr instance, BaseAccount *account);
+	void setDefault(BaseAccount *account);
 	template<typename T>
 	void unsetDefault(InstancePtr instance = nullptr) { unsetDefault(type<T>(), instance); }
 	void unsetDefault(BaseAccountType *type, InstancePtr instance = nullptr);
 
 	/// Returns true if the given account is the global default
-	bool isGlobalDefault(BaseAccount *account) const;
-	/// Returns true if the given account is default for the instance without taking the global default into account
-	bool isInstanceDefaultExplicit(InstancePtr instance, BaseAccount *account) const;
+	bool isDefault(BaseAccount *account) const;
 
 	/// The latest account is the account that was most recently changed
 	BaseAccount *latest() const { return m_latest; }
@@ -126,8 +123,7 @@ protected:
 	QByteArray doSave() const override;
 
 private:
-	//   type                    instance
-	QMap<BaseAccountType *, QMap<QString, BaseAccount *>> m_defaults;
+	QMap<BaseAccountType *, BaseAccount *> m_defaults;
 
 	BaseAccount *m_latest = nullptr;
 

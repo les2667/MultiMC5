@@ -130,47 +130,17 @@ private slots:
 
 		// no default set
 		QCOMPARE(model->getAccount<MojangAccount>(), accNull);
-		QCOMPARE(model->getAccount<MojangAccount>(instance1), accNull);
-		QCOMPARE(model->getAccount<MojangAccount>(instance2), accNull);
 		QCOMPARE(model->getAccount<AsdfAccount>(), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance1), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance2), accNull);
 
-		model->setInstanceDefault(instance1, acc1);
-		// instance default
-		QCOMPARE(model->getAccount<MojangAccount>(), accNull);
-		QCOMPARE(model->getAccount<MojangAccount>(instance1), acc1);
-		QCOMPARE(model->getAccount<MojangAccount>(instance2), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance1), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance2), accNull);
-
-		model->setGlobalDefault(acc2);
+		model->setDefault(acc2);
 		// global default
 		QCOMPARE(model->getAccount<MojangAccount>(), acc2);
-		QCOMPARE(model->getAccount<MojangAccount>(instance1), acc1);
-		QCOMPARE(model->getAccount<MojangAccount>(instance2), acc2);
 		QCOMPARE(model->getAccount<AsdfAccount>(), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance1), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance2), accNull);
 
 		model->unsetDefault<MojangAccount>();
 		// unsetting global default
 		QCOMPARE(model->getAccount<MojangAccount>(), accNull);
-		QCOMPARE(model->getAccount<MojangAccount>(instance1), acc1);
-		QCOMPARE(model->getAccount<MojangAccount>(instance2), accNull);
 		QCOMPARE(model->getAccount<AsdfAccount>(), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance1), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance2), accNull);
-
-		model->unsetDefault<MojangAccount>(instance1);
-		// unsetting instance default
-		QCOMPARE(model->getAccount<MojangAccount>(), accNull);
-		QCOMPARE(model->getAccount<MojangAccount>(instance1), accNull);
-		QCOMPARE(model->getAccount<MojangAccount>(instance2), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance1), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(instance2), accNull);
 	}
 };
 

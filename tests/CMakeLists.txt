@@ -8,7 +8,43 @@ include_directories(${MMC_SRC} ${CMAKE_CURRENT_SOURCE_DIR} ${MMC_SRC}/logic ${MM
 # a test is a file named tst_<name>.cpp anywhere in a subdirectory of the current directory
 # it can contain an include for ModelTester.h and/or TestUtil.h, in which case they will be
 # compiled into the executable
-file(GLOB_RECURSE tests "tst_*.cpp")
+set(tests
+	logic/auth/tst_AccountModel.cpp
+	logic/auth/tst_DefaultAccountProxyModel.cpp
+	logic/minecraft/auth/tasks/tst_AuthenticateTask.cpp
+	logic/minecraft/auth/tasks/tst_RefreshTask.cpp
+	logic/minecraft/auth/tasks/tst_ValidateTask.cpp
+	logic/minecraft/auth/tst_MojangAccount.cpp
+	logic/minecraft/tst_GradleSpecifier.cpp
+	logic/resources/tst_Resource.cpp
+	logic/screenshots/auth/tst_ImgurAccount.cpp
+	logic/settings/tst_INIFile.cpp
+	logic/updater/tst_DownloadTask.cpp
+	logic/updater/tst_UpdateChecker.cpp
+)
+
+set(data_files
+	data/1.json
+	data/2.json
+	data/accounts_v2.json
+	data/channels.json
+	data/errorChannels.json
+	data/fileOneA
+	data/fileOneB
+	data/fileThree
+	data/fileTwo
+	data/garbageChannels.json
+	data/index.json
+	data/noChannels.json
+	data/oneChannel.json
+	data/tst_DownloadTask-test_writeInstallScript.xml
+	data/tst_userutils-test_createShortcut-unix
+)
+
+set(binary_files
+	data/binary/accounts_v3.json
+)
+
 foreach(test ${tests})
 	# Extract the name from the source file
 	get_filename_component(name "${test}" NAME_WE)
@@ -44,7 +80,7 @@ else()
 	# we don't on windows, so we have to add it ourselves
 	set(MultiMC_TEST_DATA_PATH "file:///${MultiMC_TEST_DATA_PATH}")
 endif()
-file(GLOB data_files "data/*")
+
 foreach(data_file ${data_files})
 	if (NOT IS_DIRECTORY ${data_file})
 		get_filename_component(filename ${data_file} NAME)
@@ -56,7 +92,7 @@ foreach(data_file ${data_files})
 		)
 	endif()
 endforeach()
-file(GLOB binary_files "data/binary/*")
+
 foreach(binary_file ${binary_files})
 	get_filename_component(filename ${binary_file} NAME)
 	configure_file(${binary_file} ${CMAKE_CURRENT_BINARY_DIR}/data/${filename} COPYONLY)

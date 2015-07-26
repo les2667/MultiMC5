@@ -49,21 +49,14 @@ QVariant DefaultAccountProxyModel::data(const QModelIndex &proxyIndex, int role)
 		BaseAccount *account = m_model->getAccount(mapToSource(proxyIndex.sibling(proxyIndex.row(), 0)));
 		if (role == Qt::DisplayRole)
 		{
-			QStringList text;
-			if (m_model->isGlobalDefault(account))
+			if (m_model->isDefault(account))
 			{
-				text.append(tr("Global"));
+				return tr("Default");
 			}
-			if (m_instance && m_model->isInstanceDefaultExplicit(m_instance, account))
-			{
-				text.append(tr("This"));
-			}
-			return text.join(", ");
 		}
 		else if (role == Qt::DecorationRole)
 		{
-			// add an icon if we are the default in the current context
-			if (m_model->getAccount(account->type(), m_instance) == account)
+			if (m_model->isDefault(account))
 			{
 				return "icon:status-good";
 			}

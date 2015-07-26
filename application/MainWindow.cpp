@@ -754,7 +754,7 @@ void MainWindow::repopulateAccountsMenu()
 void MainWindow::makeAccountGlobalDefault()
 {
 	QAction *action = qobject_cast<QAction *>(sender());
-	MMC->accountsModel()->setGlobalDefault(action->data().value<BaseAccount *>());
+	MMC->accountsModel()->setDefault(action->data().value<BaseAccount *>());
 }
 
 void MainWindow::latestAccountChanged()

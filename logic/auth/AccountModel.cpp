@@ -87,27 +87,20 @@ BaseAccount *AccountModel::getAccount(const QModelIndex &index) const
 {
 	return index.isValid() ? get(index.row()) : nullptr;
 }
-BaseAccount *AccountModel::getAccount(BaseAccountType *type, const InstancePtr instance) const
+
+BaseAccount *AccountModel::getAccount(BaseAccountType *type) const
 {
-	QMap<QString, BaseAccount *> defaults = m_defaults[type];
-	// instance default?
-	if (instance)
+	auto iter = m_defaults.find(type);
+	if(iter != m_defaults.end() && *iter)
 	{
-		if (defaults.contains(instance->id()))
-		{
-			return defaults[instance->id()];
-		}
-	}
-	// global default?
-	if (defaults.contains(QString()) && defaults.value(QString()))
-	{
-		return defaults[QString()];
+		return *iter;
 	}
 	return nullptr;
 }
-void AccountModel::setGlobalDefault(BaseAccount *account)
+
+void AccountModel::setDefault(BaseAccount *account)
 {
-	m_defaults[account->type()][QString()] = account;
+	m_defaults[account->type()] = account;
 
 	m_latest = account;
 	emit latestChanged();
@@ -116,35 +109,17 @@ void AccountModel::setGlobalDefault(BaseAccount *account)
 
 	scheduleSave();
 }
-void AccountModel::setInstanceDefault(InstancePtr instance, BaseAccount *account)
-{
-	m_defaults[account->type()][instance->id()] = account;
 
-	m_latest = account;
-	emit latestChanged();
-	emit defaultsChanged();
-
-	scheduleSave();
-}
 void AccountModel::unsetDefault(BaseAccountType *type, InstancePtr instance)
 {
-	m_defaults[type].remove(instance ? instance->id() : QString());
-	if (!instance)
-	{
-		emit globalDefaultsChanged();
-	}
-	emit defaultsChanged();
-
+	m_defaults.remove(type);
+	emit globalDefaultsChanged();
 	scheduleSave();
 }
 
-bool AccountModel::isGlobalDefault(BaseAccount *account) const
+bool AccountModel::isDefault(BaseAccount *account) const
 {
-	return getAccount(account->type(), nullptr) == account;
-}
-bool AccountModel::isInstanceDefaultExplicit(InstancePtr instance, BaseAccount *account) const
-{
-	return m_defaults[account->type()][instance->id()] == account;
+	return getAccount(account->type()) == account;
 }
 
 QList<BaseAccount *> AccountModel::accountsForType(BaseAccountType *type) const
@@ -186,28 +161,21 @@ void AccountModel::registerAccount(BaseAccount *account)
 
 	scheduleSave();
 }
+
 void AccountModel::unregisterAccount(BaseAccount *account)
 {
 	Q_ASSERT(find(account) > -1);
 	disconnect(account, &BaseAccount::changed, this, &AccountModel::accountChanged);
 	remove(find(account));
 
-	// unset the all defaults that are using this account
-	const QList<QString> instanceIds = m_defaults[account->type()].keys(account); // get all instance ids that use this account
-	for (const auto instanceId : instanceIds)
-	{
-		m_defaults[account->type()].remove(instanceId);
-	}
-	if (m_defaults[account->type()].isEmpty())
-	{
-		m_defaults.remove(account->type());
-	}
+	m_defaults.remove(account->type());
 
 	m_latest = nullptr;
 	emit latestChanged();
 
 	scheduleSave();
 }
+
 void AccountModel::accountChanged()
 {
 	BaseAccount *account = qobject_cast<BaseAccount *>(sender());
@@ -226,7 +194,7 @@ bool AccountModel::doLoad(const QByteArray &data)
 	const QJsonObject root = requireObject(requireDocument(data));
 
 	QList<BaseAccount *> accs;
-	QMap<BaseAccountType *, QMap<QString, BaseAccount *>> defs;
+	QMap<BaseAccountType *, BaseAccount *> defs;
 
 	const int formatVersion = ensureInteger(root, "formatVersion", 0);
 	if (formatVersion == 2) // old, pre-multiauth format
@@ -242,7 +210,7 @@ bool AccountModel::doLoad(const QByteArray &data)
 
 			if (!active.isEmpty() && !acc->loginUsername().isEmpty() && acc->loginUsername() == active)
 			{
-				m_defaults[acc->type()][QString()] = acc;
+				m_defaults[acc->type()] = acc;
 				m_latest = acc;
 			}
 		}
@@ -289,8 +257,7 @@ bool AccountModel::doLoad(const QByteArray &data)
 			const int index = requireInteger(def, "account");
 			if (index >= 0 && index < accs.size())
 			{
-				defs[m_typeStorageIds.key(requireString(def, "type"))][requireString(def, "container")]
-						= accs.at(index);
+				defs[m_typeStorageIds.key(requireString(def, "type"))] = accs.at(index);
 			}
 		}
 	}
@@ -304,6 +271,7 @@ bool AccountModel::doLoad(const QByteArray &data)
 
 	return true;
 }
+
 QByteArray AccountModel::doSave() const
 {
 	using namespace Json;
@@ -317,19 +285,15 @@ QByteArray AccountModel::doSave() const
 	QJsonArray defaults;
 	for (auto it = m_defaults.constBegin(); it != m_defaults.constEnd(); ++it)
 	{
-		for (auto it2 = it.value().constBegin(); it2 != it.value().constEnd(); ++it2)
-		{
-			QJsonObject obj;
-			obj.insert("type", m_typeStorageIds[it.key()]);
-			obj.insert("container", it2.key());
-			obj.insert("account", find(it2.value()));
-			defaults.append(obj);
-		}
+		QJsonObject obj;
+		obj.insert("type", m_typeStorageIds[it.key()]);
+		obj.insert("account", find(it.value()));
+		defaults.append(obj);
 	}
 
 	QJsonObject root;
 	root.insert("formatVersion", ACCOUNT_LIST_FORMAT_VERSION);
 	root.insert("accounts", accounts);
 	root.insert("defaults", defaults);
-	return toBinary(root);
+	return toText(root);
 }
