@@ -326,6 +326,6 @@ slots:
 	}
 };
 
-MMCTEST_GUILESS_MAIN(AbstractCommonModelTest)
+QTEST_GUILESS_MAIN(AbstractCommonModelTest)
 
 #include "tst_AbstractCommonModel.moc"
