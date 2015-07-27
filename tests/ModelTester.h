@@ -11,49 +11,59 @@ class ModelTester : public BaseTest
 {
 	Q_OBJECT
 public:
-	virtual std::shared_ptr<QAbstractItemModel> createModel() const = 0;
-	virtual void populate(std::shared_ptr<QAbstractItemModel> model) const = 0;
+	virtual int stages() const { return 1; }
+	virtual std::shared_ptr<QAbstractItemModel> createModel(const int stage = 0) const = 0;
+	virtual void populate(std::shared_ptr<QAbstractItemModel> model, const int stage = 0) const = 0;
 	
 private slots:
 	/// What happens if we request some weird indexes?
 	void test_CreateIndexes()
 	{
-		variousIndexes(createModel());
+		for (int i = 0; i < stages(); ++i)
+		{
+			variousIndexes(createModel(i));
+		}
 	}
 
 	/// What happens if we use some weird indexes for stuff?
 	void test_UseIndexes()
 	{
-		std::shared_ptr<QAbstractItemModel> model = createModel();
-		
-		// send various indexes
-		for (const QModelIndex &index : variousIndexes(model))
+		for (int i = 0; i < stages(); ++i)
 		{
-			model->buddy(index);
-			model->columnCount(index);
-			model->data(index);
-			model->fetchMore(index);
-			model->flags(index);
-			model->hasChildren(index);
-			model->itemData(index);
-			model->parent(index);
-			model->rowCount(index);
-			model->span(index);
+			std::shared_ptr<QAbstractItemModel> model = createModel(i);
+
+			// send various indexes
+			for (const QModelIndex &index : variousIndexes(model))
+			{
+				model->buddy(index);
+				model->columnCount(index);
+				model->data(index);
+				model->fetchMore(index);
+				model->flags(index);
+				model->hasChildren(index);
+				model->itemData(index);
+				model->parent(index);
+				model->rowCount(index);
+				model->span(index);
+			}
 		}
 	}
 
 	/// Can we request data?
 	void test_RequestData()
 	{
-		std::shared_ptr<QAbstractItemModel> model = createModel();
-		populate(model);
-
-		for (int row = 0; row < model->rowCount(); ++row)
+		for (int i = 0; i < stages(); ++i)
 		{
-			for (int col = 0; col < model->columnCount(); ++col)
+			std::shared_ptr<QAbstractItemModel> model = createModel(i);
+			populate(model, i);
+
+			for (int row = 0; row < model->rowCount(); ++row)
 			{
-				model->data(model->index(row, col), Qt::DisplayRole);
-				model->data(model->index(row, col), Qt::DecorationRole);
+				for (int col = 0; col < model->columnCount(); ++col)
+				{
+					model->data(model->index(row, col), Qt::DisplayRole);
+					model->data(model->index(row, col), Qt::DecorationRole);
+				}
 			}
 		}
 	}

@@ -31,7 +31,7 @@
 class AccountTypesModel : public AbstractCommonModel<BaseAccountType *>
 {
 public:
-	explicit AccountTypesModel() : AbstractCommonModel<BaseAccountType *>(Qt::Vertical)
+	explicit AccountTypesModel() : AbstractCommonModel<BaseAccountType *>()
 	{
 		addEntry<BaseAccountType *>(0, Qt::UserRole, [](BaseAccountType *type) { return type; });
 		addEntry<QString>(0, Qt::DisplayRole, &BaseAccountType::text);
@@ -40,7 +40,7 @@ public:
 };
 
 AccountModel::AccountModel()
-	: AbstractCommonModel(Qt::Vertical), BaseConfigObject("accounts.json")
+	: AbstractCommonModel(), BaseConfigObject("accounts.json")
 {
 	m_typesModel = new AccountTypesModel;
 
