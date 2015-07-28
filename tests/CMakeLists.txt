@@ -10,7 +10,6 @@ include_directories(${MMC_SRC} ${CMAKE_CURRENT_SOURCE_DIR} ${MMC_SRC}/logic ${MM
 # compiled into the executable
 set(tests
 	logic/auth/tst_AccountModel.cpp
-	logic/auth/tst_DefaultAccountProxyModel.cpp
 	logic/minecraft/auth/tasks/tst_AuthenticateTask.cpp
 	logic/minecraft/auth/tasks/tst_RefreshTask.cpp
 	logic/minecraft/auth/tasks/tst_ValidateTask.cpp

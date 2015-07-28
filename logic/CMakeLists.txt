@@ -18,8 +18,6 @@ set(LOGIC_SOURCES
 	MMCStrings.cpp
 	BaseConfigObject.h
 	BaseConfigObject.cpp
-	AbstractCommonModel.h
-	AbstractCommonModel.cpp
 	TypeMagic.h
 
 	# Prefix tree where node names are strings between separators
@@ -77,8 +75,6 @@ set(LOGIC_SOURCES
 	net/URLConstants.cpp
 
 	# Accounts stuff
-	auth/DefaultAccountProxyModel.h
-	auth/DefaultAccountProxyModel.cpp
 	auth/AccountModel.h
 	auth/AccountModel.cpp
 	auth/BaseAccount.h

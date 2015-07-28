@@ -10,7 +10,6 @@
 #include "auth/BaseAccount.h"
 #include "auth/BaseAccountType.h"
 #include "auth/AccountModel.h"
-#include "auth/DefaultAccountProxyModel.h"
 #include "tasks/Task.h"
 #include "BaseInstance.h"
 #include "Env.h"
@@ -31,14 +30,14 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 	ui->cancelBtn->setText(m_instance ? tr("Cancel") : tr("Close"));
 	ui->offlineBtn->setVisible(false);
 
-	DefaultAccountProxyModel *proxy = new DefaultAccountProxyModel(m_instance, this);
-	proxy->setSourceModel(MMC->accountsModel().get());
-	ui->view->setModel(ResourceProxyModel::mixin<QIcon>(proxy));
+	ui->view->setModel(ResourceProxyModel::mixin<QIcon>(MMC->accountsModel().get()));
 	connect(ui->view->selectionModel(), &QItemSelectionModel::currentChanged, this, &AccountsWidget::currentChanged);
 	currentChanged(ui->view->currentIndex(), QModelIndex());
 
 	connect(ui->cancelBtn, &QPushButton::clicked, this, &AccountsWidget::rejected);
 
+	//FIXME: hacky workaround
+	/*
 	BaseAccount *def = MMC->accountsModel()->getAccount(m_requestedType);
 	if (def)
 	{
@@ -46,6 +45,7 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 		// need to delay invocation since signals get emitted that we haven't connected to yet
 		QMetaObject::invokeMethod(this, "on_useBtn_clicked", Qt::QueuedConnection);
 	}
+	*/
 }
 
 AccountsWidget::~AccountsWidget()

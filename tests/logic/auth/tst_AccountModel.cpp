@@ -52,7 +52,7 @@ private:
 	{
 		auto checkModel = [](AccountModel *model)
 		{
-			QCOMPARE(model->size(), 2);
+			QCOMPARE(model->rowCount(QModelIndex()), 2);
 			QVERIFY(model->hasAny<MojangAccount>());
 			QCOMPARE(model->accountsForType<MojangAccount>().size(), 2);
 

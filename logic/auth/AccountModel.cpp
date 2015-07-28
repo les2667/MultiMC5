@@ -28,50 +28,164 @@
 
 #define ACCOUNT_LIST_FORMAT_VERSION 3
 
-class AccountTypesModel : public AbstractCommonModel<BaseAccountType *>
+class AccountTypesModel : public QAbstractListModel
 {
 public:
-	explicit AccountTypesModel() : AbstractCommonModel<BaseAccountType *>()
+	virtual ~AccountTypesModel()
 	{
-		addEntry<BaseAccountType *>(0, Qt::UserRole, [](BaseAccountType *type) { return type; });
-		addEntry<QString>(0, Qt::DisplayRole, &BaseAccountType::text);
-		addEntry<QString>(0, Qt::DecorationRole, &BaseAccountType::icon);
+		// FIXME: dangerous
+		qDeleteAll(m_content);
 	}
+
+	virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
+	{
+		if(!index.isValid())
+		{
+			return QVariant();
+		}
+		auto row = index.row();
+		if(row < 0 || row >= m_content.size())
+		{
+			return QVariant();
+		}
+		auto accountType = m_content[row];
+		switch(role)
+		{
+			case Qt::UserRole:
+			{
+				return QVariant::fromValue<BaseAccountType *>(accountType);
+			}
+			case Qt::DisplayRole:
+			{
+				return accountType->text();
+			}
+			case Qt::DecorationRole:
+			{
+				return accountType->icon();
+			}
+			default:
+				return QVariant();
+		}
+	}
+
+	virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override
+	{
+		return m_content.size();
+	}
+
+	void add(BaseAccountType * accountType)
+	{
+		auto at = m_content.size();
+		beginInsertRows(QModelIndex(), at, at);
+		m_content.append(accountType);
+		endInsertRows();
+	}
+
+private:
+	QList<BaseAccountType *> m_content;
 };
 
 AccountModel::AccountModel()
-	: AbstractCommonModel(), BaseConfigObject("accounts.json")
+	: QAbstractListModel(), BaseConfigObject("accounts.json")
 {
 	m_typesModel = new AccountTypesModel;
 
 	registerType<MojangAccountType, MojangAccount>("mojang");
 	registerType<ImgurAccountType, ImgurAccount>("imgur");
 
-	addEntry<QString>(0, Qt::DecorationRole, &BaseAccount::avatar);
-	addEntry<QString>(0, Qt::DisplayRole, &BaseAccount::username);
-	addEntry<QString>(0, ResourceProxyModel::PlaceholderRole, [](BaseAccount *) { return "icon:hourglass"; });
-	addEntry<QString>(1, Qt::DecorationRole, [this](BaseAccount *account)
-	{
-		return account->type()->icon();
-	});
-	addEntry<QString>(1, Qt::DisplayRole, [this](BaseAccount *account)
-	{
-		return account->type()->text();
-	});
-	addEntry<BaseAccountType *>(1, Qt::UserRole, &BaseAccount::type);
-	addEntry<QString>(1, ResourceProxyModel::PlaceholderRole, [](BaseAccount *) { return "icon:hourglass"; });
-
-	setEntryTitle(0, tr("Username"));
-	setEntryTitle(1, tr("Type"));
-
 	connect(this, &AccountModel::modelReset, this, &AccountModel::listChanged);
 	connect(this, &AccountModel::rowsInserted, this, &AccountModel::listChanged);
 	connect(this, &AccountModel::rowsRemoved, this, &AccountModel::listChanged);
 	connect(this, &AccountModel::dataChanged, this, &AccountModel::listChanged);
 }
+
+int AccountModel::columnCount(const QModelIndex &parent) const
+{
+	return 2;
+}
+
+int AccountModel::rowCount(const QModelIndex &parent) const
+{
+	return m_accounts.size();
+}
+
+QVariant AccountModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+	if(role != Qt::DisplayRole)
+	{
+		return QVariant();
+	}
+	switch(section)
+	{
+		case 0:
+			return tr("Username");
+		case 1:
+			return tr("Type");
+		default:
+			return QVariant();
+	}
+}
+
+Qt::ItemFlags AccountModel::flags(const QModelIndex &index) const
+{
+	return QAbstractListModel::flags(index);
+}
+
+QVariant AccountModel::data(const QModelIndex &index, int role) const
+{
+	if(!index.isValid())
+	{
+		return QVariant();
+	}
+	auto row = index.row();
+	if(row < 0 || row >= m_accounts.size())
+	{
+		return QVariant();
+	}
+	int column = index.column();
+	auto account = m_accounts[row];
+	switch(column)
+	{
+		case 0:
+		{
+			switch(role)
+			{
+				case Qt::DecorationRole:
+					return account->avatar();
+				case Qt::DisplayRole:
+					return account->username();
+				case ResourceProxyModel::PlaceholderRole:
+					return "icon:hourglass";
+				default:
+					return QVariant();
+			}
+		}
+		case 1:
+		{
+			switch(role)
+			{
+				case Qt::DecorationRole:
+					return account->type()->icon();
+				case Qt::DisplayRole:
+					return account->type()->text();
+				case ResourceProxyModel::PlaceholderRole:
+					return "icon:hourglass";
+				case Qt::UserRole:
+					return QVariant::fromValue<BaseAccountType *>(account->type());
+				default:
+					return QVariant();
+			}
+		}
+		default:
+			return QVariant();
+	}
+}
+
 AccountModel::~AccountModel()
 {
 	saveNow();
+	// FIXME: dangerous
+	qDeleteAll(m_accounts);
 	delete m_typesModel;
 }
 
@@ -80,12 +194,12 @@ void AccountModel::registerTypeInternal(const QString &storageId, const QString 
 	m_types.insert(internalId, type);
 	m_typeStorageIds.insert(type, storageId);
 	m_accountFactories.insert(type, factory);
-	m_typesModel->append(type);
+	m_typesModel->add(type);
 }
 
 BaseAccount *AccountModel::getAccount(const QModelIndex &index) const
 {
-	return index.isValid() ? get(index.row()) : nullptr;
+	return index.isValid() ? m_accounts[index.row()] : nullptr;
 }
 
 BaseAccount *AccountModel::getAccount(BaseAccountType *type) const
@@ -125,7 +239,7 @@ bool AccountModel::isDefault(BaseAccount *account) const
 QList<BaseAccount *> AccountModel::accountsForType(BaseAccountType *type) const
 {
 	QList<BaseAccount *> out;
-	for (BaseAccount *acc : getAll())
+	for (BaseAccount *acc : m_accounts)
 	{
 		if (acc->type() == type)
 		{
@@ -137,7 +251,7 @@ QList<BaseAccount *> AccountModel::accountsForType(BaseAccountType *type) const
 
 bool AccountModel::hasAny(BaseAccountType *type) const
 {
-	for (const BaseAccount *acc : getAll())
+	for (const BaseAccount *acc : m_accounts)
 	{
 		if (acc->type() == type)
 		{
@@ -154,7 +268,10 @@ QAbstractItemModel *AccountModel::typesModel() const
 
 void AccountModel::registerAccount(BaseAccount *account)
 {
-	append(account);
+	auto index = m_accounts.size();
+	beginInsertRows(QModelIndex(), index, index);
+	m_accounts.append(account);
+	endInsertRows();
 	connect(account, &BaseAccount::changed, this, &AccountModel::accountChanged);
 	m_latest = account;
 	emit latestChanged();
@@ -164,11 +281,16 @@ void AccountModel::registerAccount(BaseAccount *account)
 
 void AccountModel::unregisterAccount(BaseAccount *account)
 {
-	Q_ASSERT(find(account) > -1);
-	disconnect(account, &BaseAccount::changed, this, &AccountModel::accountChanged);
-	remove(find(account));
+	auto index = m_accounts.indexOf(account);
+	Q_ASSERT(index > -1);
 
+	beginRemoveRows(QModelIndex(), index, index);
+	disconnect(account, &BaseAccount::changed, this, &AccountModel::accountChanged);
 	m_defaults.remove(account->type());
+	//FIXME: dangerous!
+	delete account;
+	m_accounts.removeAt(index);
+	endRemoveRows();
 
 	m_latest = nullptr;
 	emit latestChanged();
@@ -179,7 +301,7 @@ void AccountModel::unregisterAccount(BaseAccount *account)
 void AccountModel::accountChanged()
 {
 	BaseAccount *account = qobject_cast<BaseAccount *>(sender());
-	const int row = find(account);
+	const int row = m_accounts.indexOf(account);
 	emit dataChanged(index(row, 0), index(row, 1));
 
 	m_latest = account;
@@ -267,7 +389,9 @@ bool AccountModel::doLoad(const QByteArray &data)
 	{
 		connect(acc, &BaseAccount::changed, this, &AccountModel::accountChanged);
 	}
-	setAll(accs);
+	beginResetModel();
+	m_accounts = accs;
+	endResetModel();
 
 	return true;
 }
@@ -276,7 +400,7 @@ QByteArray AccountModel::doSave() const
 {
 	using namespace Json;
 	QJsonArray accounts;
-	for (const auto account : getAll())
+	for (const auto account : m_accounts)
 	{
 		QJsonObject obj = account->save();
 		obj.insert("type", m_typeStorageIds[account->type()]);
@@ -287,7 +411,7 @@ QByteArray AccountModel::doSave() const
 	{
 		QJsonObject obj;
 		obj.insert("type", m_typeStorageIds[it.key()]);
-		obj.insert("account", find(it.value()));
+		obj.insert("account", m_accounts.indexOf(it.value()));
 		defaults.append(obj);
 	}
 
