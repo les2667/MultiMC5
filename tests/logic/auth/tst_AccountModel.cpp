@@ -47,8 +47,8 @@ public:
 		m->registerAccount(m->createAccount<MojangAccount>());
 	}
 
-private slots:
-	void test_Migrate_V2_to_V3()
+private:
+	void testFormatRoundtrip(QString originalFilename, bool backupMustBeCreated)
 	{
 		auto checkModel = [](AccountModel *model)
 		{
@@ -77,19 +77,41 @@ private slots:
 			QCOMPARE(second->profiles().first().id, QString("40db0352edab1d1afb8443a34680ef10"));
 			QCOMPARE(second->profiles().first().legacy, false);
 			QCOMPARE(second->profiles().first().name, QString("IAmTheBest"));
+
+			QVERIFY(model->isDefault(first));
 		};
 
-		QFile::copy(QFINDTESTDATA("tests/data/accounts_v2.json"), "accounts.json");
+		QFile::copy(QFINDTESTDATA(originalFilename), "accounts.json");
 		std::shared_ptr<AccountModel> model = std::make_shared<AccountModel>();
-		QVERIFY(model->loadNow());
-		model->saveNow();
-		checkModel(model.get()); // compare individual fields
-		QVERIFY(TestsInternal::compareFiles(QFINDTESTDATA("tests/data/accounts_v3.json"), "accounts.json")); // compare full files
-		model.reset(new AccountModel);
-		QVERIFY(TestsInternal::compareFiles(QFINDTESTDATA("tests/data/accounts_v2.json"), "accounts.json.backup")); // ensure the backup is created
 
+		// load old format, ensure we loaded the right thing
 		QVERIFY(model->loadNow());
 		checkModel(model.get());
+
+		// save new format
+		model->saveNow();
+
+		// verify a backup was created
+		if(backupMustBeCreated)
+		{
+			QVERIFY(TestsInternal::compareFiles(QFINDTESTDATA(originalFilename), "accounts.json.backup")); // ensure the backup is created
+		}
+
+		// load again, ensure nothing got lost in translation
+		model.reset(new AccountModel);
+		QVERIFY(model->loadNow());
+		checkModel(model.get());
+	}
+
+private slots:
+	void test_Migrate_V2_to_V3()
+	{
+		testFormatRoundtrip("tests/data/accounts_v2.json", true);
+	}
+
+	void test_RoundTrip()
+	{
+		testFormatRoundtrip("tests/data/accounts_v3.json", false);
 	}
 
 	void test_Types()

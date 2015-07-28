@@ -210,7 +210,7 @@ bool AccountModel::doLoad(const QByteArray &data)
 
 			if (!active.isEmpty() && !acc->loginUsername().isEmpty() && acc->loginUsername() == active)
 			{
-				m_defaults[acc->type()] = acc;
+				defs[acc->type()] = acc;
 				m_latest = acc;
 			}
 		}

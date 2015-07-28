@@ -62,7 +62,7 @@ public:
 		QFile file2(f2);
 		if (file1.size() != file2.size())
 		{
-			qDebug() << "Size of" << f1 << "and" << f2 << "differ, they are" << file1.size() << "and" << file2.size();
+			qDebug() << "Size of" << QFileInfo(f1).absoluteFilePath() << "and" << QFileInfo(f2).absoluteFilePath() << "differ, they are" << file1.size() << "and" << file2.size();
 			return false;
 		}
 		Q_ASSERT(file1.open(QFile::ReadOnly));
@@ -103,7 +103,7 @@ public slots:
 	}
 	void cleanup()
 	{
-		delete m_dir;
+		// delete m_dir;
 	}
 
 protected:

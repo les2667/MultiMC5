@@ -27,6 +27,7 @@ set(data_files
 	data/1.json
 	data/2.json
 	data/accounts_v2.json
+	data/accounts_v3.json
 	data/channels.json
 	data/errorChannels.json
 	data/fileOneA
@@ -42,7 +43,6 @@ set(data_files
 )
 
 set(binary_files
-	data/binary/accounts_v3.json
 )
 
 foreach(test ${tests})
