@@ -4,6 +4,7 @@
 #include "ui_AccountsWidget.h"
 
 #include <QInputDialog>
+#include <QMessageBox>
 
 #include "dialogs/AccountLoginDialog.h"
 #include "dialogs/ProgressDialog.h"
@@ -35,6 +36,13 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 	currentChanged(ui->view->currentIndex(), QModelIndex());
 
 	connect(ui->cancelBtn, &QPushButton::clicked, this, &AccountsWidget::rejected);
+
+	auto head = ui->view->header();
+	head->setStretchLastSection(false);
+	head->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+	head->setSectionResizeMode(1, QHeaderView::Stretch);
+	for(int i = 2; i < head->count(); i++)
+		head->setSectionResizeMode(i, QHeaderView::ResizeToContents);
 
 	//FIXME: hacky workaround
 	/*
@@ -94,8 +102,16 @@ void AccountsWidget::on_addBtn_clicked()
 
 void AccountsWidget::on_removeBtn_clicked()
 {
+	bool remove = false;
 	BaseAccount *account = MMC->accountsModel()->getAccount(ui->view->currentIndex());
-	if (account)
+	if (!account)
+		return;
+
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::question(this, "Remove account",
+		tr("Are you sure you want to remove account %1?").arg(account->loginUsername()),
+		QMessageBox::Yes | QMessageBox::No);
+	if (reply == QMessageBox::Yes)
 	{
 		Task *task = account->createLogoutTask(m_session);
 		if (task)
@@ -106,12 +122,12 @@ void AccountsWidget::on_removeBtn_clicked()
 	}
 }
 
-void AccountsWidget::on_globalDefaultBtn_toggled()
+void AccountsWidget::on_globalDefaultBtn_clicked(bool checked)
 {
 	BaseAccount *account = MMC->accountsModel()->getAccount(ui->view->currentIndex());
 	if (account)
 	{
-		if (ui->globalDefaultBtn->isChecked())
+		if (checked)
 		{
 			MMC->accountsModel()->setDefault(account);
 		}

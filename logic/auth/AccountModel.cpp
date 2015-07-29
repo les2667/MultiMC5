@@ -101,7 +101,7 @@ AccountModel::AccountModel()
 
 int AccountModel::columnCount(const QModelIndex &parent) const
 {
-	return 2;
+	return 3;
 }
 
 int AccountModel::rowCount(const QModelIndex &parent) const
@@ -117,9 +117,11 @@ QVariant AccountModel::headerData(int section, Qt::Orientation orientation, int 
 	}
 	switch(section)
 	{
-		case 0:
+		case DefaultColumn:
+			return tr("Default");
+		case NameColumn:
 			return tr("Username");
-		case 1:
+		case TypeColumn:
 			return tr("Type");
 		default:
 			return QVariant();
@@ -128,7 +130,35 @@ QVariant AccountModel::headerData(int section, Qt::Orientation orientation, int 
 
 Qt::ItemFlags AccountModel::flags(const QModelIndex &index) const
 {
-	return QAbstractListModel::flags(index);
+	if (index.row() < 0 || index.row() >= rowCount(index) || !index.isValid())
+	{
+		return Qt::NoItemFlags;
+	}
+
+	return Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}
+
+bool AccountModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+	if (index.row() < 0 || index.row() >= rowCount(index) || !index.isValid())
+	{
+		return false;
+	}
+
+	auto account = m_accounts[index.row()];
+	if(role == Qt::CheckStateRole)
+	{
+		if(value == Qt::Checked)
+		{
+			setDefault(account);
+		}
+		else
+		{
+			unsetDefault(account->type());
+		}
+		return true;
+	}
+	return false;
 }
 
 QVariant AccountModel::data(const QModelIndex &index, int role) const
@@ -146,7 +176,17 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 	auto account = m_accounts[row];
 	switch(column)
 	{
-		case 0:
+		case DefaultColumn:
+		{
+			switch(role)
+			{
+				case Qt::CheckStateRole:
+					return isDefault(account) ? Qt::Checked : Qt::Unchecked;
+				default:
+					return QVariant();
+			}
+		}
+		case NameColumn:
 		{
 			switch(role)
 			{
@@ -160,7 +200,7 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 					return QVariant();
 			}
 		}
-		case 1:
+		case TypeColumn:
 		{
 			switch(role)
 			{
@@ -204,30 +244,42 @@ BaseAccount *AccountModel::getAccount(const QModelIndex &index) const
 
 BaseAccount *AccountModel::getAccount(BaseAccountType *type) const
 {
-	auto iter = m_defaults.find(type);
-	if(iter != m_defaults.end() && *iter)
-	{
-		return *iter;
-	}
-	return nullptr;
+	if(!m_defaults.contains(type))
+		return nullptr;
+	else return m_defaults[type];
 }
 
 void AccountModel::setDefault(BaseAccount *account)
 {
+	auto currentDefault = m_defaults[account->type()];
+
+	if(!account || currentDefault == account)
+		return;
+
+
+	// this will no longer be default
+	if(currentDefault)
+	{
+		emitRowChanged(m_accounts.indexOf(currentDefault));
+	}
+
 	m_defaults[account->type()] = account;
+	emitRowChanged(m_accounts.indexOf(currentDefault));
 
 	m_latest = account;
 	emit latestChanged();
-	emit globalDefaultsChanged();
-	emit defaultsChanged();
 
 	scheduleSave();
 }
 
-void AccountModel::unsetDefault(BaseAccountType *type, InstancePtr instance)
+void AccountModel::unsetDefault(BaseAccountType *type)
 {
+	if(!m_defaults.contains(type))
+		return;
+
+	int row = m_accounts.indexOf(m_defaults[type]);
+	emitRowChanged(row);
 	m_defaults.remove(type);
-	emit globalDefaultsChanged();
 	scheduleSave();
 }
 
@@ -286,6 +338,8 @@ void AccountModel::unregisterAccount(BaseAccount *account)
 
 	beginRemoveRows(QModelIndex(), index, index);
 	disconnect(account, &BaseAccount::changed, this, &AccountModel::accountChanged);
+
+	// FIXME: nonsense
 	m_defaults.remove(account->type());
 	//FIXME: dangerous!
 	delete account;
@@ -298,11 +352,16 @@ void AccountModel::unregisterAccount(BaseAccount *account)
 	scheduleSave();
 }
 
+void AccountModel::emitRowChanged(int row)
+{
+	emit dataChanged(index(row, 0), index(row, columnCount(QModelIndex()) - 1));
+}
+
 void AccountModel::accountChanged()
 {
 	BaseAccount *account = qobject_cast<BaseAccount *>(sender());
 	const int row = m_accounts.indexOf(account);
-	emit dataChanged(index(row, 0), index(row, 1));
+	emitRowChanged(row);
 
 	m_latest = account;
 	emit latestChanged();

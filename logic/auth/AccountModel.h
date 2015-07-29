@@ -54,11 +54,19 @@ class AccountModel : public QAbstractListModel, public BaseConfigObject
 
 	using AccountFactory = std::function<BaseAccount *()>;
 
+	enum Columns
+	{
+		DefaultColumn,
+		NameColumn,
+		TypeColumn
+	};
+
 public:
 	explicit AccountModel();
 	~AccountModel();
 
 	virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+	virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
 	virtual int rowCount(const QModelIndex &parent = QModelIndex()) const;
 	virtual int columnCount(const QModelIndex &parent) const;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
@@ -102,12 +110,12 @@ public:
 
 	void setDefault(BaseAccount *account);
 
-	template <typename T> void unsetDefault(InstancePtr instance = nullptr)
+	template <typename T> void unsetDefault()
 	{
-		unsetDefault(type<T>(), instance);
+		unsetDefault(type<T>());
 	}
 
-	void unsetDefault(BaseAccountType *type, InstancePtr instance = nullptr);
+	void unsetDefault(BaseAccountType *type);
 
 	/// Returns true if the given account is the global default
 	bool isDefault(BaseAccount *account) const;
@@ -147,8 +155,6 @@ public:
 signals:
 	void listChanged();
 	void latestChanged();
-	void globalDefaultsChanged();
-	void defaultsChanged();
 
 public slots:
 	void registerAccount(BaseAccount *account);
@@ -162,6 +168,8 @@ protected:
 	QByteArray doSave() const override;
 
 private:
+	void emitRowChanged(int row);
+
 	QMap<BaseAccountType *, BaseAccount *> m_defaults;
 
 	BaseAccount *m_latest = nullptr;
