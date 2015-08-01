@@ -1,8 +1,7 @@
 #pragma once
 
 #include <memory>
-
-#include "ResourceHandler.h"
+#include <resources/ResourceHandler.h>
 
 class IconResourceHandler : public ResourceHandler
 {

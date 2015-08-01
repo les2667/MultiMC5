@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include "ResourceHandler.h"
+#include <resources/ResourceHandler.h>
 
 class NetJob;
 

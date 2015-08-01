@@ -2,9 +2,8 @@
 
 #include <QDebug>
 
-#include "WebResourceHandler.h"
-#include "IconResourceHandler.h"
 #include "ResourceObserver.h"
+#include "ResourceHandler.h"
 
 // definition of static members of Resource
 QMap<QString, std::function<std::shared_ptr<ResourceHandler>(const QString &)>> Resource::m_handlers;
@@ -25,17 +24,6 @@ public:
 Resource::Resource(const QString &resource)
 	: m_resource(resource)
 {
-	// register default handlers
-	// QUESTION: move elsewhere?
-	if (!m_handlers.contains("web"))
-	{
-		registerHandler<WebResourceHandler>("web");
-	}
-	if (!m_handlers.contains("icon"))
-	{
-		registerHandler<IconResourceHandler>("icon");
-	}
-
 	if (!resource.isEmpty())
 	{
 		// a valid resource identifier has the format <id>:<data>

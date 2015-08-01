@@ -1,4 +1,5 @@
 #include "IconResourceHandler.h"
+#include <xdgicon.h>
 
 #include <QDir>
 #include <QDebug>
@@ -35,28 +36,5 @@ void IconResourceHandler::init(std::shared_ptr<ResourceHandler> &ptr)
 
 QVariant IconResourceHandler::get() const
 {
-	const QDir iconsDir = QDir(":/icons/" + m_theme);
-
-	QVariantMap out;
-	for (const QFileInfo &sizeInfo : iconsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
-	{
-		const QDir dir = QDir(sizeInfo.absoluteFilePath());
-		const QString dirName = sizeInfo.fileName();
-		const int size = dirName.left(dirName.indexOf('x')).toInt();
-		if (dir.exists(m_key + ".png") && dirName != "scalable")
-		{
-			out.insert(dir.absoluteFilePath(m_key + ".png"), size);
-		}
-		else if (dir.exists(m_key + ".svg") && dirName == "scalable")
-		{
-			out.insert(dir.absoluteFilePath(m_key + ".svg"), size);
-		}
-	}
-
-	if (out.isEmpty())
-	{
-		qWarning() << "Couldn't find any icons for" << m_key;
-	}
-
-	return out;
+	return XdgIcon::fromTheme(m_key);
 }

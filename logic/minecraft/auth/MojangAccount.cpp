@@ -89,6 +89,7 @@ void MojangAccount::load(const int formatVersion, const QJsonObject &object)
 		}
 	}
 }
+
 QJsonObject MojangAccount::save() const
 {
 	QJsonObject json = BaseAccount::save();
@@ -134,6 +135,7 @@ QString MojangAccount::avatar() const
 	}
 	return "web:https://crafatar.com/avatars/" + token("uuid");
 }
+
 QString MojangAccount::bigAvatar() const
 {
 	if (!hasToken("uuid") || token("uuid").isEmpty())
@@ -159,10 +161,12 @@ Task *MojangAccount::createLoginTask(const QString &username, const QString &pas
 	return new AuthenticateTask(std::dynamic_pointer_cast<MojangAuthSession>(session),
 								username, password, this);
 }
+
 Task *MojangAccount::createCheckTask(SessionPtr session)
 {
 	return new RefreshTask(std::dynamic_pointer_cast<MojangAuthSession>(session), this);
 }
+
 Task *MojangAccount::createLogoutTask(SessionPtr session)
 {
 	return nullptr; // TODO
