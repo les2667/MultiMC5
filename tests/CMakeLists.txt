@@ -14,6 +14,7 @@ set(tests
 	logic/minecraft/auth/tasks/tst_RefreshTask.cpp
 	logic/minecraft/auth/tasks/tst_ValidateTask.cpp
 	logic/minecraft/auth/tst_MojangAccount.cpp
+	logic/minecraft/auth/tst_MojangSessionUtils.cpp
 	logic/minecraft/tst_GradleSpecifier.cpp
 	logic/resources/tst_Resource.cpp
 	logic/screenshots/auth/tst_ImgurAccount.cpp

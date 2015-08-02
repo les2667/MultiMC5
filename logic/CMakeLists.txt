@@ -90,6 +90,8 @@ set(LOGIC_SOURCES
 	minecraft/auth/MojangAuthSession.cpp
 	minecraft/auth/MojangAccount.h
 	minecraft/auth/MojangAccount.cpp
+	minecraft/auth/MojangSessionUtils.h
+	minecraft/auth/MojangSessionUtils.cpp
 	minecraft/auth/tasks/YggdrasilTask.h
 	minecraft/auth/tasks/YggdrasilTask.cpp
 	minecraft/auth/tasks/AuthenticateTask.h

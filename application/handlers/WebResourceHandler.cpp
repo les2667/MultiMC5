@@ -6,6 +6,7 @@
 #include "FileSystem.h"
 #include "Env.h"
 
+//FIXME: wrong. needs to be done elsewhere.
 QMap<QString, NetJob *> WebResourceHandler::m_activeDownloads;
 
 WebResourceHandler::WebResourceHandler(const QString &url)
