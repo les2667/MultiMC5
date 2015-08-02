@@ -16,6 +16,7 @@ AccountsDialog::AccountsDialog(BaseAccountType *type, InstancePtr instance, QWid
 
 	QHBoxLayout *layout = new QHBoxLayout(this);
 	layout->addWidget(m_widget);
+	layout->setMargin(0);
 
 	connect(m_widget, &AccountsWidget::accepted, this, &AccountsDialog::accept);
 	connect(m_widget, &AccountsWidget::rejected, this, &AccountsDialog::reject);

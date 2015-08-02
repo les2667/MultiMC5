@@ -46,6 +46,7 @@ void BaseAccount::load(const int formatVersion, const QJsonObject &obj)
 		m_tokens.insert(it.key(), requireString(it.value()));
 	}
 }
+
 QJsonObject BaseAccount::save() const
 {
 	QJsonObject obj;

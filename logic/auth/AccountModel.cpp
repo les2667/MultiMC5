@@ -174,6 +174,11 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 	}
 	int column = index.column();
 	auto account = m_accounts[row];
+	// FIXME: nasty hack
+	if(role == Qt::UserRole)
+	{
+		return QVariant::fromValue((void *)account);
+	}
 	switch(column)
 	{
 		case DefaultColumn:
@@ -210,8 +215,6 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 					return account->type()->text();
 				case ResourceProxyModel::PlaceholderRole:
 					return "icon:hourglass";
-				case Qt::UserRole:
-					return QVariant::fromValue<BaseAccountType *>(account->type());
 				default:
 					return QVariant();
 			}
@@ -389,7 +392,7 @@ bool AccountModel::doLoad(const QByteArray &data)
 			acc->load(formatVersion, account);
 			accs.append(acc);
 
-			if (!active.isEmpty() && !acc->loginUsername().isEmpty() && acc->loginUsername() == active)
+			if (!active.isEmpty() && !acc->username().isEmpty() && acc->username() == active)
 			{
 				defs[acc->type()] = acc;
 				m_latest = acc;

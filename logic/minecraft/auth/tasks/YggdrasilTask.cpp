@@ -38,10 +38,15 @@ void YggdrasilTask::executeTask()
 {
 	changeState(STATE_SENDING_REQUEST);
 
-	QNetworkRequest netRequest(QUrl("https://" + URLConstants::AUTH_BASE + getEndpoint()));
+	auto url = QUrl("https://" + URLConstants::AUTH_BASE + getEndpoint());
+	auto request = Json::toText(getRequestContent());
+
+	QNetworkRequest netRequest(url);
 	netRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-	m_netReply = ENV.qnam()->post(netRequest, Json::toText(getRequestContent()));
+	qDebug() << url << request.data();
+
+	m_netReply = ENV.qnam()->post(netRequest, request);
 	connect(m_netReply, &QNetworkReply::finished, this, &YggdrasilTask::processReply);
 	connect(m_netReply, &QNetworkReply::uploadProgress, this, &YggdrasilTask::refreshTimers);
 	connect(m_netReply, &QNetworkReply::downloadProgress, this, &YggdrasilTask::refreshTimers);

@@ -83,7 +83,6 @@ public: /* construction */
 public: /* BaseAccount interface (parts of it) */
 	QString avatar() const override;
 	QString bigAvatar() const override;
-	QString loginUsername() const override { return token("login_username"); }
 	Task *createLoginTask(const QString &username, const QString &password, SessionPtr session) override;
 	Task *createCheckTask(SessionPtr session) override;
 	Task *createLogoutTask(SessionPtr session) override;

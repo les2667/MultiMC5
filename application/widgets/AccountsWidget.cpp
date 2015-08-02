@@ -31,7 +31,12 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 	ui->cancelBtn->setText(m_instance ? tr("Cancel") : tr("Close"));
 	ui->offlineBtn->setVisible(false);
 
-	ui->view->setModel(ResourceProxyModel::mixin<QIcon>(MMC->accountsModel().get()));
+	ui->view->setSelectionMode(QAbstractItemView::SingleSelection);
+	ui->view->setSelectionBehavior(QAbstractItemView::SelectRows);
+	ui->view->setAllColumnsShowFocus(true);
+	auto model = ResourceProxyModel::mixin<QIcon>(MMC->accountsModel().get());
+	ui->view->setModel(model);
+
 	connect(ui->view->selectionModel(), &QItemSelectionModel::currentChanged, this, &AccountsWidget::currentChanged);
 	currentChanged(ui->view->currentIndex(), QModelIndex());
 
@@ -45,15 +50,21 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 		head->setSectionResizeMode(i, QHeaderView::ResizeToContents);
 
 	//FIXME: hacky workaround
-	/*
 	BaseAccount *def = MMC->accountsModel()->getAccount(m_requestedType);
 	if (def)
 	{
-		ui->view->setCurrentIndex(ui->view->model()->index(MMC->accountsModel()->find(def), 0));
-		// need to delay invocation since signals get emitted that we haven't connected to yet
-		QMetaObject::invokeMethod(this, "on_useBtn_clicked", Qt::QueuedConnection);
+		for(int i = 0; i < model->rowCount(); i++)
+		{
+			QVariant value = model->data(model->index(i, 0), Qt::UserRole);
+			auto acct = (BaseAccount *)value.value<void *>();
+			if(acct == def)
+			{
+				ui->view->setCurrentIndex(model->index(i, 0));
+				// need to delay invocation since signals get emitted that we haven't connected to yet
+				QMetaObject::invokeMethod(this, "on_useBtn_clicked", Qt::QueuedConnection);
+			}
+		}
 	}
-	*/
 }
 
 AccountsWidget::~AccountsWidget()
@@ -109,7 +120,7 @@ void AccountsWidget::on_removeBtn_clicked()
 
 	QMessageBox::StandardButton reply;
 	reply = QMessageBox::question(this, "Remove account",
-		tr("Are you sure you want to remove account %1?").arg(account->loginUsername()),
+		tr("Are you sure you want to remove account %1?").arg(account->username()),
 		QMessageBox::Yes | QMessageBox::No);
 	if (reply == QMessageBox::Yes)
 	{
@@ -149,27 +160,28 @@ void AccountsWidget::on_useBtn_clicked()
 		ui->offlineBtn->setEnabled(false);
 		ui->progressWidget->setVisible(true);
 		std::shared_ptr<Task> task = std::shared_ptr<Task>(account->createCheckTask(m_session));
-		ui->progressWidget->exec(task);
-		ui->progressWidget->setVisible(false);
+		if(task)
+		{
+			ui->progressWidget->exec(task);
+			ui->progressWidget->setVisible(false);
 
-		if (task->successful())
+			if (task->successful())
+			{
+				emit accepted();
+				return;
+			}
+		}
+		AccountLoginDialog dlg(account, this);
+		if (dlg.exec() == AccountLoginDialog::Accepted)
 		{
 			emit accepted();
 		}
 		else
 		{
-			AccountLoginDialog dlg(account, this);
-			if (dlg.exec() == AccountLoginDialog::Accepted)
-			{
-				emit accepted();
-			}
-			else
-			{
-				ui->groupBox->setEnabled(true);
-				ui->useBtn->setEnabled(true);
-				ui->view->setEnabled(true);
-				ui->offlineBtn->setEnabled(m_offlineEnabled);
-			}
+			ui->groupBox->setEnabled(true);
+			ui->useBtn->setEnabled(true);
+			ui->view->setEnabled(true);
+			ui->offlineBtn->setEnabled(m_offlineEnabled);
 		}
 	}
 }

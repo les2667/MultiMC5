@@ -27,6 +27,7 @@ AccountListPage::AccountListPage(InstancePtr instance, QWidget *parent)
 	m_tabs = new QTabWidget(this);
 	m_tabs->tabBar()->hide();
 	QHBoxLayout *layout = new QHBoxLayout(this);
+	layout->setMargin(0);
 	layout->addWidget(m_tabs);
 
 	m_accountsWidget = new AccountsWidget(nullptr, instance, this);

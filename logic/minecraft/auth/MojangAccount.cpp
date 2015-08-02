@@ -47,7 +47,6 @@ void MojangAccount::load(const int formatVersion, const QJsonObject &object)
 
 		if (formatVersion == 2)
 		{
-			setToken("login_username", ensureString(object, "username"));
 			setClientToken(ensureString(object, "clientToken"));
 			setAccessToken(ensureString(object, "accessToken"));
 		}
@@ -93,7 +92,6 @@ void MojangAccount::load(const int formatVersion, const QJsonObject &object)
 QJsonObject MojangAccount::save() const
 {
 	QJsonObject json = BaseAccount::save();
-	json.insert("login_username", token("login_username"));
 
 	QJsonArray profileArray;
 	for (AccountProfile profile : m_profiles)
@@ -147,6 +145,7 @@ QString MojangAccount::bigAvatar() const
 
 Task *MojangAccount::createLoginTask(const QString &username, const QString &password, SessionPtr session)
 {
+	setUsername(username);
 	if (accountStatus() == NotVerified && password.isEmpty())
 	{
 		MojangAuthSessionPtr authSession = std::dynamic_pointer_cast<MojangAuthSession>(session);
@@ -157,14 +156,18 @@ Task *MojangAccount::createLoginTask(const QString &username, const QString &pas
 		}
 		return nullptr;
 	}
-	setToken("login_username", username);
 	return new AuthenticateTask(std::dynamic_pointer_cast<MojangAuthSession>(session),
 								username, password, this);
 }
 
 Task *MojangAccount::createCheckTask(SessionPtr session)
 {
-	return new RefreshTask(std::dynamic_pointer_cast<MojangAuthSession>(session), this);
+	auto mojangSession = std::dynamic_pointer_cast<MojangAuthSession>(session);
+	if(mojangSession->access_token.isEmpty())
+	{
+		return nullptr;
+	}
+	return new RefreshTask(mojangSession, this);
 }
 
 Task *MojangAccount::createLogoutTask(SessionPtr session)
@@ -180,7 +183,6 @@ bool MojangAccount::setCurrentProfile(const QString &profileId)
 		if (m_profiles[i].id == profileId)
 		{
 			m_currentProfile = i;
-			setUsername(m_profiles[i].name);
 			changed();
 			return true;
 		}

@@ -37,7 +37,7 @@ void ProgressWidget::start(std::shared_ptr<Task> task)
 	connect(m_task.get(), &Task::destroyed, this, &ProgressWidget::taskDestroyed);
 	if (!m_task->isRunning())
 	{
-		QMetaObject::invokeMethod(m_task.get(), "start", Qt::QueuedConnection);
+		m_task->start();
 	}
 }
 bool ProgressWidget::exec(std::shared_ptr<Task> task)

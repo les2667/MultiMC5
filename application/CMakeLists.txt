@@ -281,7 +281,6 @@ SET(MULTIMC_UIS
 	pages/LegacyUpgradePage.ui
 
 	# Global settings pages
-	pages/global/AccountListPage.ui
 	pages/global/ExternalToolsPage.ui
 	pages/global/JavaPage.ui
 	pages/global/MinecraftPage.ui

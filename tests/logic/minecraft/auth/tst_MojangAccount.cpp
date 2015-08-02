@@ -37,8 +37,7 @@ protected:
 		QVERIFY(sess->auth_server_online);
 		QCOMPARE(acc->clientToken(), sess->client_token);
 		QCOMPARE(acc->accessToken(), sess->access_token);
-		QCOMPARE(acc->username(), sess->username);
-		QCOMPARE(acc->loginUsername(), username());
+		QCOMPARE(acc->username(), username());
 		QCOMPARE(acc->profiles().size(), 1);
 	}
 	void afterCheckChecks(BaseAccount *account, SessionPtr session) override

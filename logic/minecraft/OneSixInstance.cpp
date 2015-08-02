@@ -132,7 +132,7 @@ QStringList OneSixInstance::processMinecraftArgs(MojangAuthSessionPtr acc)
 
 std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(SessionPtr acc)
 {
-	MojangAuthSessionPtr account = std::dynamic_pointer_cast<MojangAuthSession>(acc);
+	MojangAuthSessionPtr mojangSession = std::dynamic_pointer_cast<MojangAuthSession>(acc);
 
 	QString launchScript;
 	QIcon icon = ENV.icons()->getIcon(iconKey());
@@ -197,7 +197,7 @@ std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(SessionPtr acc)
 	}
 
 	// generic minecraft params
-	for (auto param : processMinecraftArgs(account))
+	for (auto param : processMinecraftArgs(mojangSession))
 	{
 		launchScript += "param " + param + "\n";
 	}
@@ -217,8 +217,8 @@ std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(SessionPtr acc)
 
 	// legacy auth
 	{
-		launchScript += "userName " + account->player_name + "\n";
-		launchScript += "sessionId " + account->session + "\n";
+		launchScript += "userName " + mojangSession->player_name + "\n";
+		launchScript += "sessionId " + mojangSession->session + "\n";
 	}
 
 	// native libraries (mostly LWJGL)
@@ -254,7 +254,7 @@ std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(SessionPtr acc)
 		process->appendStep(step);
 	}
 	// if we aren't in offline mode,.
-	if(account->status != MojangAuthSession::PlayableOffline)
+	if(mojangSession->status != MojangAuthSession::PlayableOffline)
 	{
 		process->appendStep(std::make_shared<Update>(pptr));
 	}
@@ -278,20 +278,31 @@ std::shared_ptr<LaunchTask> OneSixInstance::createLaunchTask(SessionPtr acc)
 		step->setWorkingDirectory(minecraftRoot());
 		process->appendStep(step);
 	}
-	if (account)
+	if (mojangSession)
 	{
 		QMap<QString, QString> filter;
-		if (account->session != "-")
-			filter[account->session] = tr("<SESSION ID>");
-		filter[account->access_token] = tr("<ACCESS TOKEN>");
-		filter[account->client_token] = tr("<CLIENT TOKEN>");
-		filter[account->uuid] = tr("<PROFILE ID>");
-		filter[account->player_name] = tr("<PROFILE NAME>");
-
-		auto i = account->u.properties.begin();
-		while (i != account->u.properties.end())
+		auto add = [&](QString key, QString value)
 		{
-			filter[i.value()] = "<" + i.key().toUpper() + ">";
+			if(key.isEmpty())
+			{
+				qDebug() << key << "was empty";
+				return;
+			}
+			filter[key] = value;
+		};
+		if (mojangSession->session != "-")
+		{
+			add(mojangSession->session, tr("<SESSION ID>"));
+		}
+		add(mojangSession->access_token, tr("<ACCESS TOKEN>"));
+		add(mojangSession->client_token, tr("<CLIENT TOKEN>"));
+		add(mojangSession->uuid, tr("<PROFILE ID>"));
+		add(mojangSession->player_name, tr("<PROFILE NAME>"));
+
+		auto i = mojangSession->u.properties.begin();
+		while (i != mojangSession->u.properties.end())
+		{
+			add(i.value(), "<" + i.key().toUpper() + ">");
 			++i;
 		}
 		process->setCensorFilter(filter);

@@ -31,11 +31,11 @@ QByteArray toBinary(const QJsonArray &array)
 }
 QByteArray toText(const QJsonObject &obj)
 {
-	return QJsonDocument(obj).toJson(QJsonDocument::Compact);
+	return QJsonDocument(obj).toJson(QJsonDocument::Indented);
 }
 QByteArray toText(const QJsonArray &array)
 {
-	return QJsonDocument(array).toJson(QJsonDocument::Compact);
+	return QJsonDocument(array).toJson(QJsonDocument::Indented);
 }
 
 static bool isBinaryJson(const QByteArray &data)

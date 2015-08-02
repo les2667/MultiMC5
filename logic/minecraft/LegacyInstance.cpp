@@ -174,17 +174,28 @@ std::shared_ptr<LaunchTask> LegacyInstance::createLaunchTask(SessionPtr session)
 	if (mojangSession)
 	{
 		QMap<QString, QString> filter;
+		auto add = [&](QString key, QString value)
+		{
+			if(key.isEmpty())
+			{
+				qDebug() << key << "was empty";
+				return;
+			}
+			filter[key] = value;
+		};
 		if (mojangSession->session != "-")
-			filter[mojangSession->session] = tr("<SESSION ID>");
-		filter[mojangSession->access_token] = tr("<ACCESS TOKEN>");
-		filter[mojangSession->client_token] = tr("<CLIENT TOKEN>");
-		filter[mojangSession->uuid] = tr("<PROFILE ID>");
-		filter[mojangSession->player_name] = tr("<PROFILE NAME>");
+		{
+			add(mojangSession->session, tr("<SESSION ID>"));
+		}
+		add(mojangSession->access_token, tr("<ACCESS TOKEN>"));
+		add(mojangSession->client_token, tr("<CLIENT TOKEN>"));
+		add(mojangSession->uuid, tr("<PROFILE ID>"));
+		add(mojangSession->player_name, tr("<PROFILE NAME>"));
 
 		auto i = mojangSession->u.properties.begin();
 		while (i != mojangSession->u.properties.end())
 		{
-			filter[i.value()] = "<" + i.key().toUpper() + ">";
+			add(i.value(), "<" + i.key().toUpper() + ">");
 			++i;
 		}
 		process->setCensorFilter(filter);

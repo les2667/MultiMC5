@@ -58,8 +58,7 @@ private:
 
 			MojangAccount *first = dynamic_cast<MojangAccount *>(model->accountsForType<MojangAccount>().first());
 			QVERIFY(first);
-			QCOMPARE(first->username(), QString("IWantTea"));
-			QCOMPARE(first->loginUsername(), QString("arthur.philip@dent.co.uk"));
+			QCOMPARE(first->username(), QString("arthur.philip@dent.co.uk"));
 			QCOMPARE(first->clientToken(), QString("f11bc5a96e8428cae87df606c6ed05cb"));
 			QCOMPARE(first->accessToken(), QString("214c57e4fe0b58253e3409cdd5e63053"));
 			QCOMPARE(first->profiles().size(), 1);
@@ -69,8 +68,7 @@ private:
 
 			MojangAccount *second = dynamic_cast<MojangAccount *>(model->accountsForType<MojangAccount>().at(1));
 			QVERIFY(second);
-			QCOMPARE(second->username(), QString("IAmTheBest"));
-			QCOMPARE(second->loginUsername(), QString("zaphod.beeblebrox@galaxy.gov"));
+			QCOMPARE(second->username(), QString("zaphod.beeblebrox@galaxy.gov"));
 			QCOMPARE(second->clientToken(), QString("d03a2bcf2d1cc467042c7b2680ba947d"));
 			QCOMPARE(second->accessToken(), QString("204fe2edcee69f8c207c392e6cc25c9c"));
 			QCOMPARE(second->profiles().size(), 1);
