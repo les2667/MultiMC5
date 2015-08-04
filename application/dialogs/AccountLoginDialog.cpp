@@ -29,6 +29,7 @@ AccountLoginDialog::AccountLoginDialog(QWidget *parent) :
 	connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &AccountLoginDialog::loginClicked);
 	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &AccountLoginDialog::reject);
 }
+
 AccountLoginDialog::AccountLoginDialog(BaseAccountType *type, QWidget *parent)
 	: AccountLoginDialog(parent)
 {
@@ -38,6 +39,7 @@ AccountLoginDialog::AccountLoginDialog(BaseAccountType *type, QWidget *parent)
 
 	setupForType(type);
 }
+
 AccountLoginDialog::AccountLoginDialog(BaseAccount *account, QWidget *parent)
 	: AccountLoginDialog(account->type(), parent)
 {
@@ -98,6 +100,7 @@ void AccountLoginDialog::currentTypeChanged(const int index)
 		setupForType(type);
 	}
 }
+
 void AccountLoginDialog::setupForType(BaseAccountType *type)
 {
 	m_type = type;
@@ -123,6 +126,6 @@ void AccountLoginDialog::setupForType(BaseAccountType *type)
 	}
 	if (!m_account)
 	{
-		m_account = MMC->accountsModel()->createAccount(type);
+		m_account = type->create();
 	}
 }

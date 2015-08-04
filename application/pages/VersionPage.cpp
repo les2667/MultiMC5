@@ -240,7 +240,7 @@ void VersionPage::on_changeVersionBtn_clicked()
 	if (!vselect.exec() || !vselect.selectedVersion())
 		return;
 
-	if (!MMC->accountsModel()->hasAny<MojangAccount>())
+	if (!MMC->accountsModel()->hasAny("mojang"))
 	{
 		CustomMessageBox::selectable(
 			this, tr("Error"),

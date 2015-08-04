@@ -28,6 +28,11 @@ public:
 	QString usernameText() const override { return QString(); }
 	QString passwordText() const override { return QString(); }
 	Type type() const override { return UsernamePassword; }
+
+	virtual BaseAccount *create()
+	{
+		return new AsdfAccount(this);
+	}
 };
 
 class AccountModelTest : public ModelTester
@@ -37,14 +42,14 @@ public:
 	std::shared_ptr<QAbstractItemModel> createModel(const int = 0) const override
 	{
 		auto m = std::make_shared<AccountModel>();
-		m->registerType<AsdfAccountType, AsdfAccount>("asdf");
+		m->registerType("asdf", new AsdfAccountType());
 		m->setSaveTimeout(INT_MAX);
 		return m;
 	}
 	void populate(std::shared_ptr<QAbstractItemModel> model, const int = 0) const override
 	{
 		auto m = std::dynamic_pointer_cast<AccountModel>(model);
-		m->registerAccount(m->createAccount<MojangAccount>());
+		m->registerAccount(m->type("mojang")->create());
 	}
 
 private:
@@ -53,10 +58,10 @@ private:
 		auto checkModel = [](AccountModel *model)
 		{
 			QCOMPARE(model->rowCount(QModelIndex()), 2);
-			QVERIFY(model->hasAny<MojangAccount>());
-			QCOMPARE(model->accountsForType<MojangAccount>().size(), 2);
+			QVERIFY(model->hasAny("mojang"));
+			QCOMPARE(model->accountsForType("mojang").size(), 2);
 
-			MojangAccount *first = dynamic_cast<MojangAccount *>(model->accountsForType<MojangAccount>().first());
+			MojangAccount *first = dynamic_cast<MojangAccount *>(model->accountsForType("mojang").first());
 			QVERIFY(first);
 			QCOMPARE(first->username(), QString("arthur.philip@dent.co.uk"));
 			QCOMPARE(first->clientToken(), QString("f11bc5a96e8428cae87df606c6ed05cb"));
@@ -66,7 +71,7 @@ private:
 			QCOMPARE(first->profiles().first().legacy, false);
 			QCOMPARE(first->profiles().first().name, QString("IWantTea"));
 
-			MojangAccount *second = dynamic_cast<MojangAccount *>(model->accountsForType<MojangAccount>().at(1));
+			MojangAccount *second = dynamic_cast<MojangAccount *>(model->accountsForType("mojang").at(1));
 			QVERIFY(second);
 			QCOMPARE(second->username(), QString("zaphod.beeblebrox@galaxy.gov"));
 			QCOMPARE(second->clientToken(), QString("d03a2bcf2d1cc467042c7b2680ba947d"));
@@ -116,7 +121,7 @@ private slots:
 	{
 		std::shared_ptr<AccountModel> model = std::dynamic_pointer_cast<AccountModel>(createModel());
 		QVERIFY(model->typesModel());
-		QVERIFY(model->type<MojangAccount>());
+		QVERIFY(model->type("mojang"));
 	}
 
 	void test_Querying()
@@ -126,8 +131,8 @@ private slots:
 
 		BaseAccount *account = model->getAccount(model->index(0, 0));
 		QVERIFY(account);
-		QCOMPARE(model->hasAny<MojangAccount>(), true);
-		QCOMPARE(model->accountsForType<MojangAccount>(), QList<BaseAccount *>() << account);
+		QCOMPARE(model->hasAny("mojang"), true);
+		QCOMPARE(model->accountsForType("mojang"), QList<BaseAccount *>() << account);
 		QCOMPARE(model->latest(), account);
 	}
 
@@ -149,18 +154,18 @@ private slots:
 		QVERIFY(acc2);
 
 		// no default set
-		QCOMPARE(model->getAccount<MojangAccount>(), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(), accNull);
+		QCOMPARE(model->getDefault("mojang"), accNull);
+		QCOMPARE(model->getDefault("asdf"), accNull);
 
 		model->setDefault(acc2);
 		// global default
-		QCOMPARE(model->getAccount<MojangAccount>(), acc2);
-		QCOMPARE(model->getAccount<AsdfAccount>(), accNull);
+		QCOMPARE(model->getDefault("mojang"), acc2);
+		QCOMPARE(model->getDefault("asdf"), accNull);
 
-		model->unsetDefault<MojangAccount>();
+		model->unsetDefault("mojang");
 		// unsetting global default
-		QCOMPARE(model->getAccount<MojangAccount>(), accNull);
-		QCOMPARE(model->getAccount<AsdfAccount>(), accNull);
+		QCOMPARE(model->getDefault("mojang"), accNull);
+		QCOMPARE(model->getDefault("asdf"), accNull);
 	}
 };
 

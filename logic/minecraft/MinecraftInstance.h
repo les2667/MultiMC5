@@ -11,6 +11,11 @@ public:
 	MinecraftInstance(SettingsObjectPtr globalSettings, SettingsObjectPtr settings, const QString &rootDir);
 	virtual ~MinecraftInstance() {};
 
+	virtual QString accountType() const
+	{
+		return "mojang";
+	}
+
 	/// Path to the instance's minecraft directory.
 	QString minecraftRoot() const;
 

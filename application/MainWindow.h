@@ -143,7 +143,7 @@ slots:
 
 	void latestAccountChanged();
 	void makeAccountGlobalDefault();
-	void repopulateAccountsMenu();
+	void repopulateProfilesMenu();
 
 	void updateNewsLabel();
 

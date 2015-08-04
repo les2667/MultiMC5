@@ -17,15 +17,15 @@
 
 #include <QAbstractListModel>
 #include <memory>
-#include <type_traits>
-
+#include <map>
 #include "BaseConfigObject.h"
 #include "BaseAccount.h"
 #include "BaseAccountType.h"
 
 class Container;
 class AccountTypesModel;
-using InstancePtr = std::shared_ptr<class BaseInstance>;
+class BaseInstance;
+using InstancePtr = std::shared_ptr<BaseInstance>;
 
 /** @brief The AccountModel class manages accounts and account types
  *
@@ -52,8 +52,6 @@ class AccountModel : public QAbstractListModel, public BaseConfigObject
 {
 	Q_OBJECT
 
-	using AccountFactory = std::function<BaseAccount *()>;
-
 	enum Columns
 	{
 		DefaultColumn,
@@ -72,50 +70,24 @@ public:
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 	virtual Qt::ItemFlags flags(const QModelIndex &index) const;
 
-	/// Registering an account type makes it loadable, createable etc.
-	/// Example: model->registerType<MojangAccountType, MojangAccount>("mojang");
-	template <typename TypeClass, typename Class> void registerType(const QString &storageId)
-	{
-		static_assert(std::is_base_of<BaseAccountType, TypeClass>::value,
-					  "TypeClass needs to be a subclass of BaseAccountType");
-		static_assert(std::is_base_of<BaseAccount, Class>::value,
-					  "Class needs to be a subclass of BaseAccount");
-		BaseAccountType *type = new TypeClass;
-		if (!type->isAvailable())
-		{
-			delete type;
-			return;
-		}
-		registerTypeInternal(storageId, internalId<Class>(), type, [type]()
-							 {
-								 return new Class(type);
-							 });
-	}
+	void registerType(const QString &storageId, BaseAccountType * type);
 
-	/// Returns the registered BaseAccountType * object for a given BaseAccount subclass type
-	template <typename T> BaseAccountType *type() const
+	BaseAccountType *type(const QString & storageId) const
 	{
-		return m_types.value(internalId<T>());
-	}
-
-	BaseAccount *getAccount(const QModelIndex &index) const;
-
-	template <typename T> BaseAccount *getAccount() const
-	{
-		return getAccount(type<T>());
+		auto iter = m_types.find(storageId);
+		if(iter == m_types.end())
+			return nullptr;
+		return *iter;
 	}
 
 	//FIXME: won't work through generic sort&filter proxy
-	BaseAccount *getAccount(BaseAccountType *type) const;
+	BaseAccount *getAccount(const QModelIndex &index) const;
 
+	BaseAccount *getDefault(BaseAccountType *type) const;
+	BaseAccount *getDefault(const QString& storageId) const;
 	void setDefault(BaseAccount *account);
-
-	template <typename T> void unsetDefault()
-	{
-		unsetDefault(type<T>());
-	}
-
 	void unsetDefault(BaseAccountType *type);
+	void unsetDefault(const QString& storageId);
 
 	/// Returns true if the given account is the global default
 	bool isDefault(BaseAccount *account) const;
@@ -126,31 +98,13 @@ public:
 		return m_latest;
 	}
 
-	template <typename T> QList<BaseAccount *> accountsForType() const
-	{
-		return accountsForType(type<T>());
-	}
-
 	QList<BaseAccount *> accountsForType(BaseAccountType *type) const;
-
-	template <typename T> bool hasAny() const
-	{
-		return hasAny(type<T>());
-	}
+	QList<BaseAccount *> accountsForType(const QString& storageId) const;
 
 	bool hasAny(BaseAccountType *type) const;
+	bool hasAny(const QString & storageId) const;
 
 	QAbstractItemModel *typesModel() const;
-
-	template <typename T> BaseAccount *createAccount()
-	{
-		return createAccount(type<T>());
-	}
-
-	BaseAccount *createAccount(BaseAccountType *type)
-	{
-		return m_accountFactories[type]();
-	}
 
 signals:
 	void listChanged();
@@ -174,25 +128,12 @@ private:
 
 	BaseAccount *m_latest = nullptr;
 
-	// used to go from a BaseAccount subclass type (not instance!) to BaseAccountType *
+	// mappings between type name and type
 	QMap<QString, BaseAccountType *> m_types;
-	// used for creating accounts
-	QMap<BaseAccountType *, AccountFactory> m_accountFactories;
-	// used for storage
 	QMap<BaseAccountType *, QString> m_typeStorageIds;
 
 	// stored account types
 	AccountTypesModel *m_typesModel;
 
 	QList<BaseAccount *> m_accounts;
-
-	void registerTypeInternal(const QString &storageId, const QString &internalId,
-							  BaseAccountType *type, AccountFactory factory);
-
-	template <typename T> static QString internalId()
-	{
-		static_assert(std::is_base_of<BaseAccount, T>::value,
-					  "T needs to be a subclass of BaseAccount");
-		return T::staticMetaObject.className();
-	}
 };

@@ -50,7 +50,7 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 		head->setSectionResizeMode(i, QHeaderView::ResizeToContents);
 
 	//FIXME: hacky workaround
-	BaseAccount *def = MMC->accountsModel()->getAccount(m_requestedType);
+	BaseAccount *def = MMC->accountsModel()->getDefault(m_requestedType);
 	if (def)
 	{
 		for(int i = 0; i < model->rowCount(); i++)

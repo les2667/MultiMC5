@@ -33,6 +33,8 @@ public:
 		UsernamePassword
 	};
 
+	virtual BaseAccount * create() = 0;
+
 	virtual QString text() const = 0;
 	virtual QString icon() const = 0;
 	virtual QString usernameText() const = 0;

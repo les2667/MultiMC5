@@ -38,4 +38,9 @@ public:
 	Type type() const override { return OAuth2Pin; }
 	QUrl oauth2PinUrl() const override;
 	bool isAvailable() const override;
+
+	virtual BaseAccount *create()
+	{
+		return new ImgurAccount(this);
+	}
 };

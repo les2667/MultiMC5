@@ -66,6 +66,9 @@ public:
 	/// be unique.
 	virtual QString id() const;
 
+	/// the account type this instance uses
+	virtual QString accountType() const = 0;
+
 	void setRunning(bool running);
 	bool isRunning() const;
 

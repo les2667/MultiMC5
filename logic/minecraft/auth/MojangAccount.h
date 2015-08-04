@@ -72,7 +72,10 @@ class MojangAccount : public BaseAccount
 	Q_OBJECT
 public: /* construction */
 	//! Default constructor
-	explicit MojangAccount(BaseAccountType *type, QObject *parent = nullptr) : BaseAccount(type, parent) {}
+	explicit MojangAccount(BaseAccountType *type, QObject *parent = nullptr)
+		: BaseAccount(type, parent)
+	{
+	}
 
 	//! Loads a MojangAccount from the given JSON object.
 	void load(const int formatVersion, const QJsonObject &json);
@@ -83,7 +86,8 @@ public: /* construction */
 public: /* BaseAccount interface (parts of it) */
 	QString avatar() const override;
 	QString bigAvatar() const override;
-	Task *createLoginTask(const QString &username, const QString &password, SessionPtr session) override;
+	Task *createLoginTask(const QString &username, const QString &password,
+						  SessionPtr session) override;
 	Task *createCheckTask(SessionPtr session) override;
 	Task *createLogoutTask(SessionPtr session) override;
 
@@ -108,11 +112,23 @@ public: /* manipulation */
 
 	// Used to identify the client - the user can have multiple clients for the same account
 	// Think: different launchers, all connecting to the same account/profile
-	QString clientToken() const { return token("clientToken"); }
-	void setClientToken(const QString &token) { setToken("clientToken", token); }
+	QString clientToken() const
+	{
+		return token("clientToken");
+	}
+	void setClientToken(const QString &token)
+	{
+		setToken("clientToken", token);
+	}
 	// Blank if not logged in.
-	QString accessToken() const { return token("accessToken"); }
-	void setAccessToken(const QString &token) { setToken("accessToken", token); }
+	QString accessToken() const
+	{
+		return token("accessToken");
+	}
+	void setAccessToken(const QString &token)
+	{
+		setToken("accessToken", token);
+	}
 
 public: /* queries */
 	QList<AccountProfile> profiles() const
@@ -158,9 +174,28 @@ public:
 class MojangAccountType : public BaseAccountType
 {
 public:
-	QString text() const override { return QObject::tr("Mojang"); }
-	QString icon() const override { return "icon:mojang"; }
-	QString usernameText() const override { return QObject::tr("E-Mail/Username:"); }
-	QString passwordText() const override { return QObject::tr("Password:"); }
-	Type type() const override { return UsernamePassword; }
+	QString text() const override
+	{
+		return QObject::tr("Mojang");
+	}
+	QString icon() const override
+	{
+		return "icon:mojang";
+	}
+	QString usernameText() const override
+	{
+		return QObject::tr("E-Mail/Username:");
+	}
+	QString passwordText() const override
+	{
+		return QObject::tr("Password:");
+	}
+	Type type() const override
+	{
+		return UsernamePassword;
+	}
+	virtual BaseAccount *create()
+	{
+		return new MojangAccount(this);
+	}
 };

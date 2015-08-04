@@ -70,4 +70,8 @@ public:
 	{
 		return QMap<QString, QString>();
 	}
+	virtual QString accountType() const
+	{
+		return QString();
+	}
 };

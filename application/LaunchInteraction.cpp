@@ -36,7 +36,7 @@ void LaunchController::login()
 	auto session = std::make_shared<MojangAuthSession>();
 	session->wants_online = m_online;
 	m_session = session;
-	AccountsDialog dlg(MMC->accountsModel()->type<MojangAccount>(), m_instance, m_parentWidget);
+	AccountsDialog dlg(MMC->accountsModel()->type("mojang"), m_instance, m_parentWidget);
 	dlg.setSession(m_session);
 	if (dlg.exec() != QDialog::Accepted)
 	{

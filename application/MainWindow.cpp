@@ -356,7 +356,6 @@ namespace Ui {
 #include "java/JavaVersionList.h"
 
 #include "auth/AccountModel.h"
-#include "minecraft/auth/MojangAccount.h"
 
 #include "updater/DownloadTask.h"
 
@@ -515,7 +514,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	connect(manageAccountsAction, SIGNAL(triggered(bool)), this,
 			SLOT(on_actionManageAccounts_triggered()));
 
-	repopulateAccountsMenu();
+	repopulateProfilesMenu();
 
 	accountMenuButton = new QToolButton(this);
 	accountMenuButton->setText(tr("Accounts"));
@@ -533,7 +532,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	// Shouldn't have to use lambdas here like this, but if I don't, the compiler throws a fit.
 	// Template hell sucks...
 	connect(MMC->accountsModel().get(), &AccountModel::latestChanged, this, &MainWindow::latestAccountChanged);
-	connect(MMC->accountsModel().get(), &AccountModel::listChanged, this, &MainWindow::repopulateAccountsMenu);
+	connect(MMC->accountsModel().get(), &AccountModel::listChanged, this, &MainWindow::repopulateProfilesMenu);
 
 	// Show initial account
 	latestAccountChanged();
@@ -695,56 +694,38 @@ void MainWindow::updateToolsMenu()
 	ui->actionLaunchInstance->setMenu(launchMenu);
 }
 
-void MainWindow::repopulateAccountsMenu()
+void MainWindow::repopulateProfilesMenu()
 {
 	accountMenu->clear();
 
 	std::shared_ptr<AccountModel> accounts = MMC->accountsModel();
 
+	// FIXME: get account type from selected instance, only populate with accounts that fit type.
 	if (accounts->rowCount() == 0)
 	{
 		QAction *action = new QAction(tr("No accounts added!"), this);
 		action->setEnabled(false);
 		accountMenu->addAction(action);
-
-		accountMenu->addSeparator();
 	}
 	else
 	{
-		// TODO: Nicer way to iterate?
+		// FIXME: use profiles, not accounts!
 		for (int i = 0; i < accounts->rowCount(); i++)
 		{
 			BaseAccount *account = accounts->getAccount(accounts->index(i));
-
-			// Styling hack
-			QAction *section = new QAction(account->username(), this);
-			section->setEnabled(false);
-			accountMenu->addAction(section);
-
-			// TODO generalize. subaccounts?
-			MojangAccount *mojangAccount = dynamic_cast<MojangAccount *>(account);
-			if (mojangAccount)
+			QAction *action = new QAction(account->username(), this);
+			action->setData(qVariantFromValue(account));
+			action->setCheckable(true);
+			if (MMC->accountsModel()->getDefault(account->type()) == account)
 			{
-				for (auto profile : mojangAccount->profiles())
-				{
-					QAction *action = new QAction(profile.name, this);
-					action->setData(qVariantFromValue(account));
-					action->setCheckable(true);
-					if (mojangAccount->currentProfile().id == profile.id && MMC->accountsModel()->getAccount(account->type()) == account)
-					{
-						action->setChecked(true);
-					}
-
-					Resource::create(account->avatar(), Resource::create("icon:hourglass"))->applyTo(action);
-					accountMenu->addAction(action);
-					connect(action, &QAction::triggered, this, &MainWindow::makeAccountGlobalDefault);
-				}
+				action->setChecked(true);
 			}
-
-			accountMenu->addSeparator();
+			Resource::create(account->avatar(), Resource::create("icon:hourglass"))->applyTo(action);
+			accountMenu->addAction(action);
+			connect(action, &QAction::triggered, this, &MainWindow::makeAccountGlobalDefault);
 		}
 	}
-
+	accountMenu->addSeparator();
 	accountMenu->addAction(manageAccountsAction);
 }
 
@@ -759,8 +740,9 @@ void MainWindow::makeAccountGlobalDefault()
 
 void MainWindow::latestAccountChanged()
 {
-	repopulateAccountsMenu();
+	repopulateProfilesMenu();
 
+	// FIXME: this is bullshit.
 	BaseAccount *account = MMC->accountsModel()->latest();
 	if (account && !account->avatar().isEmpty())
 	{
@@ -1108,7 +1090,8 @@ void MainWindow::instanceFromVersion(QString instName, QString instGroup, QStrin
 
 void MainWindow::finalizeInstance(InstancePtr inst)
 {
-	if (MMC->accountsModel()->hasAny<MojangAccount>())
+	auto acctType = inst->accountType();
+	if(acctType.isEmpty() || MMC->accountsModel()->hasAny(acctType))
 	{
 		ProgressDialog loadDialog(this);
 		auto update = inst->createUpdateTask();
@@ -1122,6 +1105,7 @@ void MainWindow::finalizeInstance(InstancePtr inst)
 	}
 	else
 	{
+		// FIXME: PARAMETRIZE
 		CustomMessageBox::selectable(
 			this, tr("Error"),
 			tr("MultiMC cannot download Minecraft or update instances unless you have at least "

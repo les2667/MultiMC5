@@ -90,8 +90,8 @@ AccountModel::AccountModel()
 {
 	m_typesModel = new AccountTypesModel;
 
-	registerType<MojangAccountType, MojangAccount>("mojang");
-	registerType<ImgurAccountType, ImgurAccount>("imgur");
+	registerType("mojang", new MojangAccountType());
+	registerType("imgur", new ImgurAccountType());
 
 	connect(this, &AccountModel::modelReset, this, &AccountModel::listChanged);
 	connect(this, &AccountModel::rowsInserted, this, &AccountModel::listChanged);
@@ -232,11 +232,10 @@ AccountModel::~AccountModel()
 	delete m_typesModel;
 }
 
-void AccountModel::registerTypeInternal(const QString &storageId, const QString &internalId, BaseAccountType *type, AccountFactory factory)
+void AccountModel::registerType(const QString &storageId, BaseAccountType * type)
 {
-	m_types.insert(internalId, type);
+	m_types.insert(storageId, type);
 	m_typeStorageIds.insert(type, storageId);
-	m_accountFactories.insert(type, factory);
 	m_typesModel->add(type);
 }
 
@@ -245,11 +244,19 @@ BaseAccount *AccountModel::getAccount(const QModelIndex &index) const
 	return index.isValid() ? m_accounts[index.row()] : nullptr;
 }
 
-BaseAccount *AccountModel::getAccount(BaseAccountType *type) const
+BaseAccount *AccountModel::getDefault(BaseAccountType *type) const
 {
 	if(!m_defaults.contains(type))
 		return nullptr;
 	else return m_defaults[type];
+}
+
+BaseAccount *AccountModel::getDefault(const QString &storageId) const
+{
+	auto t = type(storageId);
+	if(!t)
+		return nullptr;
+	return getDefault(t);
 }
 
 void AccountModel::setDefault(BaseAccount *account)
@@ -286,9 +293,17 @@ void AccountModel::unsetDefault(BaseAccountType *type)
 	scheduleSave();
 }
 
+void AccountModel::unsetDefault(const QString &storageId)
+{
+	auto t = type(storageId);
+	if(!t)
+		return;
+	return unsetDefault(t);
+}
+
 bool AccountModel::isDefault(BaseAccount *account) const
 {
-	return getAccount(account->type()) == account;
+	return getDefault(account->type()) == account;
 }
 
 QList<BaseAccount *> AccountModel::accountsForType(BaseAccountType *type) const
@@ -304,6 +319,15 @@ QList<BaseAccount *> AccountModel::accountsForType(BaseAccountType *type) const
 	return out;
 }
 
+QList<BaseAccount *> AccountModel::accountsForType(const QString &storageId) const
+{
+	auto t = type(storageId);
+	if(!t)
+		return {};
+	return accountsForType(t);
+}
+
+
 bool AccountModel::hasAny(BaseAccountType *type) const
 {
 	for (const BaseAccount *acc : m_accounts)
@@ -314,6 +338,12 @@ bool AccountModel::hasAny(BaseAccountType *type) const
 		}
 	}
 	return false;
+}
+
+bool AccountModel::hasAny(const QString &storageId) const
+{
+	auto accountType = m_typeStorageIds.key(storageId);
+	return hasAny(accountType);
 }
 
 QAbstractItemModel *AccountModel::typesModel() const
@@ -388,7 +418,8 @@ bool AccountModel::doLoad(const QByteArray &data)
 		const QString active = ensureString(root, "activeAccount", "");
 		for (const QJsonObject &account : requireIsArrayOf<QJsonObject>(root, "accounts"))
 		{
-			BaseAccount *acc = createAccount<MojangAccount>();
+			// BaseAccount *acc = createAccount<MojangAccount>();
+			BaseAccount *acc = m_types["mojang"]->create();
 			acc->load(formatVersion, account);
 			accs.append(acc);
 
@@ -429,7 +460,7 @@ bool AccountModel::doLoad(const QByteArray &data)
 			}
 			else
 			{
-				BaseAccount *acc = m_accountFactories[m_typeStorageIds.key(type)]();
+				BaseAccount *acc = m_types[type]->create();
 				acc->load(formatVersion, account);
 				accs.append(acc);
 			}
