@@ -24,6 +24,7 @@
 #include "icons/IconList.h"
 #include "minecraft/LwjglVersionList.h"
 #include "minecraft/MinecraftVersionList.h"
+#include <minecraft/auth/MojangAccount.h>
 #include "liteloader/LiteLoaderVersionList.h"
 
 #include "forge/ForgeVersionList.h"
@@ -52,6 +53,7 @@
 #include "handlers/WebResourceHandler.h"
 
 #include "ftb/FTBPlugin.h"
+#include <screenshots/auth/ImgurAccount.h>
 
 using namespace Util::Commandline;
 
@@ -230,6 +232,9 @@ MultiMC::MultiMC(int &argc, char **argv, bool test_mode) : QApplication(argc, ar
 						 });
 
 	m_accountsModel.reset(new AccountModel);
+	// FIXME: account plugin hook point
+	m_accountsModel->registerType(new MojangAccountType());
+	m_accountsModel->registerType(new ImgurAccountType());
 
 	// init the http meta cache
 	ENV.initHttpMetaCache(rootPath, staticDataPath);

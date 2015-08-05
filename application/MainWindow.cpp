@@ -716,7 +716,7 @@ void MainWindow::repopulateProfilesMenu()
 			QAction *action = new QAction(account->username(), this);
 			action->setData(qVariantFromValue(account));
 			action->setCheckable(true);
-			if (MMC->accountsModel()->getDefault(account->type()) == account)
+			if (account->isDefault())
 			{
 				action->setChecked(true);
 			}
@@ -735,7 +735,9 @@ void MainWindow::repopulateProfilesMenu()
 void MainWindow::makeAccountGlobalDefault()
 {
 	QAction *action = qobject_cast<QAction *>(sender());
-	MMC->accountsModel()->setDefault(action->data().value<BaseAccount *>());
+	auto acct = action->data().value<BaseAccount *>();
+	if(acct)
+		acct->setDefault();
 }
 
 void MainWindow::latestAccountChanged()

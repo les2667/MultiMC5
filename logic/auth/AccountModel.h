@@ -27,27 +27,6 @@ class AccountTypesModel;
 class BaseInstance;
 using InstancePtr = std::shared_ptr<BaseInstance>;
 
-/** @brief The AccountModel class manages accounts and account types
- *
- * All methods that are specialized with an account type can be called either with a
- *BaseAccountType * as the first
- * parameter or as the BaseAccount subclass as a single template parameter.
- * Example: These two are equivalent:
- *   model->getAccount<MojangAccount>();
- *   model->getAccount(model->type<MojangAccount>());
- *
- * The first calling convention is simpler and shorter to use, while the second is useful if you
- *need to store the type
- * before using it with AccountModel.
- *
- * Internally AccountModel keeps an internal ID of each account type, used for looking up the
- *BaseAccountType * from a
- * BaseAccount subclass type. This internal ID is taken from T::staticMetaObject.className().
- *This means you ALWAYS
- * need to add the Q_OBJECT class to your BaseAccount subclasses, otherwise the internal ID will
- *be "BaseAccount",
- * which obviously won't work out very well...
- */
 class AccountModel : public QAbstractListModel, public BaseConfigObject
 {
 	Q_OBJECT
@@ -70,7 +49,7 @@ public:
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 	virtual Qt::ItemFlags flags(const QModelIndex &index) const;
 
-	void registerType(const QString &storageId, BaseAccountType * type);
+	void registerType(BaseAccountType * type);
 
 	BaseAccountType *type(const QString & storageId) const
 	{
@@ -82,15 +61,6 @@ public:
 
 	//FIXME: won't work through generic sort&filter proxy
 	BaseAccount *getAccount(const QModelIndex &index) const;
-
-	BaseAccount *getDefault(BaseAccountType *type) const;
-	BaseAccount *getDefault(const QString& storageId) const;
-	void setDefault(BaseAccount *account);
-	void unsetDefault(BaseAccountType *type);
-	void unsetDefault(const QString& storageId);
-
-	/// Returns true if the given account is the global default
-	bool isDefault(BaseAccount *account) const;
 
 	/// The latest account is the account that was most recently changed
 	BaseAccount *latest() const
@@ -116,6 +86,7 @@ public slots:
 
 private slots:
 	void accountChanged();
+	void defaultChanged(BaseAccount *oldDef, BaseAccount *newDef);
 
 protected:
 	bool doLoad(const QByteArray &data) override;
@@ -124,13 +95,10 @@ protected:
 private:
 	void emitRowChanged(int row);
 
-	QMap<BaseAccountType *, BaseAccount *> m_defaults;
-
 	BaseAccount *m_latest = nullptr;
 
 	// mappings between type name and type
 	QMap<QString, BaseAccountType *> m_types;
-	QMap<BaseAccountType *, QString> m_typeStorageIds;
 
 	// stored account types
 	AccountTypesModel *m_typesModel;

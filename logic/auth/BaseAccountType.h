@@ -17,15 +17,19 @@
 
 #include <QUrl>
 #include <QMetaType>
+#include <QObject>
 #include <memory>
 
 class BaseAccount;
 class QString;
 
-class BaseAccountType
+class BaseAccountType : public QObject
 {
+	Q_OBJECT
 public:
-	virtual ~BaseAccountType() {}
+	virtual ~BaseAccountType()
+	{
+	}
 
 	enum Type
 	{
@@ -33,15 +37,95 @@ public:
 		UsernamePassword
 	};
 
-	virtual BaseAccount * create() = 0;
+	/**
+	 * Create an account based on this account type
+	 */
+	virtual BaseAccount *create() = 0;
 
+	/**
+	 * Internal id of this account type
+	 */
+	virtual QString id() const = 0;
+
+	/**
+	 * Localized name of this account type
+	 */
 	virtual QString text() const = 0;
+
+	/**
+	 * Icon key used for this account type
+	 */
 	virtual QString icon() const = 0;
+
+	/**
+	 * Localized name for the login token
+	 */
 	virtual QString usernameText() const = 0;
+
+	/**
+	 * Localized name for the password token
+	 */
 	virtual QString passwordText() const = 0;
+
+	/**
+	 * Either OAuth2Pin or UsernamePassword type
+	 */
 	virtual Type type() const = 0;
-	virtual QUrl oauth2PinUrl() const { return QUrl(); }
-	virtual bool isAvailable() const { return true; }
+
+
+	/**
+	 * The URL for oauth authentication
+	 */
+	virtual QUrl oauth2PinUrl() const
+	{
+		return QUrl();
+	}
+
+	/**
+	 * Determines if this account type can be used.
+	 */
+	virtual bool isAvailable() const
+	{
+		return true;
+	}
+
+	BaseAccount * getDefault() const
+	{
+		return m_default;
+	}
+
+	void setDefault(BaseAccount * def, bool initial = false)
+	{
+		if(m_default != def)
+		{
+			auto keep = m_default;
+			m_default = def;
+			if(!initial)
+			{
+				emit defaultChanged(keep, def);
+			}
+		}
+	}
+
+	void unsetDefault()
+	{
+		if(m_default)
+		{
+			auto keep = m_default;
+			m_default = nullptr;
+			emit defaultChanged(keep, m_default);
+		}
+	}
+
+	bool isDefault(BaseAccount * acct)
+	{
+		return m_default == acct;
+	}
+
+signals:
+	void defaultChanged(BaseAccount * oldDef, BaseAccount * newDef);
+private:
+	BaseAccount * m_default = nullptr;
 };
 
 Q_DECLARE_METATYPE(BaseAccountType *)

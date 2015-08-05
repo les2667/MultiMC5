@@ -72,8 +72,8 @@ class MojangAccount : public BaseAccount
 	Q_OBJECT
 public: /* construction */
 	//! Default constructor
-	explicit MojangAccount(BaseAccountType *type, QObject *parent = nullptr)
-		: BaseAccount(type, parent)
+	explicit MojangAccount(BaseAccountType *type)
+		: BaseAccount(type)
 	{
 	}
 
@@ -174,6 +174,10 @@ public:
 class MojangAccountType : public BaseAccountType
 {
 public:
+	QString id() const override
+	{
+		return "mojang";
+	}
 	QString text() const override
 	{
 		return QObject::tr("Mojang");

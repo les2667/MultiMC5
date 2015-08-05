@@ -9,6 +9,7 @@
 #include "logic/minecraft/auth/MojangAccount.h"
 #include "logic/FileSystem.h"
 #include "logic/Json.h"
+#include <screenshots/auth/ImgurAccount.h>
 #include "tests/TestUtil.h"
 
 class AsdfAccount : public BaseAccount
@@ -23,6 +24,7 @@ public:
 class AsdfAccountType : public BaseAccountType
 {
 public:
+	QString id() const override { return "asdf"; }
 	QString text() const override { return QString(); }
 	QString icon() const override { return QString(); }
 	QString usernameText() const override { return QString(); }
@@ -42,7 +44,9 @@ public:
 	std::shared_ptr<QAbstractItemModel> createModel(const int = 0) const override
 	{
 		auto m = std::make_shared<AccountModel>();
-		m->registerType("asdf", new AsdfAccountType());
+		m->registerType(new MojangAccountType());
+		m->registerType(new ImgurAccountType());
+		m->registerType(new AsdfAccountType());
 		m->setSaveTimeout(INT_MAX);
 		return m;
 	}
@@ -81,11 +85,11 @@ private:
 			QCOMPARE(second->profiles().first().legacy, false);
 			QCOMPARE(second->profiles().first().name, QString("IAmTheBest"));
 
-			QVERIFY(model->isDefault(first));
+			QVERIFY(first->isDefault());
 		};
 
 		QFile::copy(QFINDTESTDATA(originalFilename), "accounts.json");
-		std::shared_ptr<AccountModel> model = std::make_shared<AccountModel>();
+		std::shared_ptr<AccountModel> model = std::dynamic_pointer_cast<AccountModel>(createModel());
 
 		// load old format, ensure we loaded the right thing
 		QVERIFY(model->loadNow());
@@ -101,7 +105,7 @@ private:
 		}
 
 		// load again, ensure nothing got lost in translation
-		model.reset(new AccountModel);
+		model = std::dynamic_pointer_cast<AccountModel>(createModel());
 		QVERIFY(model->loadNow());
 		checkModel(model.get());
 	}
@@ -153,19 +157,24 @@ private slots:
 		QVERIFY(acc1);
 		QVERIFY(acc2);
 
+		auto mojang = model->type("mojang");
+		auto asdf = model->type("asdf");
+		QVERIFY(mojang);
+		QVERIFY(asdf);
+
 		// no default set
-		QCOMPARE(model->getDefault("mojang"), accNull);
-		QCOMPARE(model->getDefault("asdf"), accNull);
+		QCOMPARE(mojang->getDefault(), accNull);
+		QCOMPARE(asdf->getDefault(), accNull);
 
-		model->setDefault(acc2);
+		acc2->setDefault();
 		// global default
-		QCOMPARE(model->getDefault("mojang"), acc2);
-		QCOMPARE(model->getDefault("asdf"), accNull);
+		QCOMPARE(mojang->getDefault(), acc2);
+		QCOMPARE(asdf->getDefault(), accNull);
 
-		model->unsetDefault("mojang");
+		mojang->unsetDefault();
 		// unsetting global default
-		QCOMPARE(model->getDefault("mojang"), accNull);
-		QCOMPARE(model->getDefault("asdf"), accNull);
+		QCOMPARE(mojang->getDefault(), accNull);
+		QCOMPARE(asdf->getDefault(), accNull);
 	}
 };
 

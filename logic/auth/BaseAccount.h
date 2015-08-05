@@ -30,7 +30,7 @@ class BaseAccount : public QObject
 {
 	Q_OBJECT
 public:
-	explicit BaseAccount(BaseAccountType *type, QObject *parent = nullptr);
+	explicit BaseAccount(BaseAccountType *type);
 	virtual ~BaseAccount()
 	{
 	}
@@ -44,6 +44,7 @@ public:
 	{
 		return QString();
 	}
+
 	virtual QString bigAvatar() const
 	{
 		return avatar();
@@ -57,20 +58,27 @@ public:
 	{
 		return m_username;
 	}
+
 	void setUsername(const QString &username);
 
 	bool hasToken(const QString &key) const
 	{
 		return m_tokens.contains(key);
 	}
+
 	QString token(const QString &key) const
 	{
 		return m_tokens[key];
 	}
+
 	void setToken(const QString &key, const QString &token);
 
 	virtual void load(const int formatVersion, const QJsonObject &obj);
 	virtual QJsonObject save() const;
+
+	void setDefault();
+	void unsetDefault();
+	bool isDefault();
 
 signals:
 	void changed();

@@ -18,8 +18,8 @@
 #include "Json.h"
 #include "AccountModel.h"
 
-BaseAccount::BaseAccount(BaseAccountType *type, QObject *parent)
-	: QObject(parent), m_type(type)
+BaseAccount::BaseAccount(BaseAccountType *type)
+	: QObject(), m_type(type)
 {
 }
 
@@ -58,4 +58,22 @@ QJsonObject BaseAccount::save() const
 	}
 	obj.insert("tokens", tokens);
 	return obj;
+}
+
+void BaseAccount::setDefault()
+{
+	m_type->setDefault(this);
+}
+
+void BaseAccount::unsetDefault()
+{
+	if(m_type->isDefault(this))
+	{
+		m_type->unsetDefault();
+	}
+}
+
+bool BaseAccount::isDefault()
+{
+	return m_type->isDefault(this);
 }

@@ -49,9 +49,8 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 	for(int i = 2; i < head->count(); i++)
 		head->setSectionResizeMode(i, QHeaderView::ResizeToContents);
 
-	//FIXME: hacky workaround
-	BaseAccount *def = MMC->accountsModel()->getDefault(m_requestedType);
-	if (def)
+	BaseAccount *def;
+	if (m_requestedType && (def = m_requestedType->getDefault()))
 	{
 		for(int i = 0; i < model->rowCount(); i++)
 		{
@@ -140,11 +139,11 @@ void AccountsWidget::on_globalDefaultBtn_clicked(bool checked)
 	{
 		if (checked)
 		{
-			MMC->accountsModel()->setDefault(account);
+			account->setDefault();
 		}
 		else
 		{
-			MMC->accountsModel()->unsetDefault(account->type());
+			account->unsetDefault();
 		}
 	}
 }
@@ -216,7 +215,7 @@ void AccountsWidget::currentChanged(const QModelIndex &current, const QModelInde
 		ui->groupBox->setEnabled(true);
 		Resource::create(account->bigAvatar(), Resource::create("icon:hourglass"))->applyTo(ui->avatarLbl);
 		ui->usernameLbl->setText(account->username());
-		ui->globalDefaultBtn->setChecked(MMC->accountsModel()->isDefault(account));
+		ui->globalDefaultBtn->setChecked(account->isDefault());
 		ui->useBtn->setEnabled(m_requestedType == account->type());
 	}
 }

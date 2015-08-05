@@ -23,9 +23,6 @@
 #include "resources/ResourceProxyModel.h"
 #include "pathutils.h"
 
-#include "minecraft/auth/MojangAccount.h"
-#include "screenshots/auth/ImgurAccount.h"
-
 #define ACCOUNT_LIST_FORMAT_VERSION 3
 
 class AccountTypesModel : public QAbstractListModel
@@ -90,9 +87,6 @@ AccountModel::AccountModel()
 {
 	m_typesModel = new AccountTypesModel;
 
-	registerType("mojang", new MojangAccountType());
-	registerType("imgur", new ImgurAccountType());
-
 	connect(this, &AccountModel::modelReset, this, &AccountModel::listChanged);
 	connect(this, &AccountModel::rowsInserted, this, &AccountModel::listChanged);
 	connect(this, &AccountModel::rowsRemoved, this, &AccountModel::listChanged);
@@ -150,11 +144,11 @@ bool AccountModel::setData(const QModelIndex &index, const QVariant &value, int 
 	{
 		if(value == Qt::Checked)
 		{
-			setDefault(account);
+			account->setDefault();
 		}
 		else
 		{
-			unsetDefault(account->type());
+			account->unsetDefault();
 		}
 		return true;
 	}
@@ -186,7 +180,7 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 			switch(role)
 			{
 				case Qt::CheckStateRole:
-					return isDefault(account) ? Qt::Checked : Qt::Unchecked;
+					return account->isDefault() ? Qt::Checked : Qt::Unchecked;
 				default:
 					return QVariant();
 			}
@@ -232,11 +226,11 @@ AccountModel::~AccountModel()
 	delete m_typesModel;
 }
 
-void AccountModel::registerType(const QString &storageId, BaseAccountType * type)
+void AccountModel::registerType(BaseAccountType * type)
 {
-	m_types.insert(storageId, type);
-	m_typeStorageIds.insert(type, storageId);
+	m_types.insert(type->id(), type);
 	m_typesModel->add(type);
+	connect(type, &BaseAccountType::defaultChanged, this, &AccountModel::defaultChanged);
 }
 
 BaseAccount *AccountModel::getAccount(const QModelIndex &index) const
@@ -244,66 +238,17 @@ BaseAccount *AccountModel::getAccount(const QModelIndex &index) const
 	return index.isValid() ? m_accounts[index.row()] : nullptr;
 }
 
-BaseAccount *AccountModel::getDefault(BaseAccountType *type) const
+void AccountModel::defaultChanged(BaseAccount *oldDef, BaseAccount *newDef)
 {
-	if(!m_defaults.contains(type))
-		return nullptr;
-	else return m_defaults[type];
-}
-
-BaseAccount *AccountModel::getDefault(const QString &storageId) const
-{
-	auto t = type(storageId);
-	if(!t)
-		return nullptr;
-	return getDefault(t);
-}
-
-void AccountModel::setDefault(BaseAccount *account)
-{
-	auto currentDefault = m_defaults[account->type()];
-
-	if(!account || currentDefault == account)
-		return;
-
-
-	// this will no longer be default
-	if(currentDefault)
+	if(oldDef)
 	{
-		emitRowChanged(m_accounts.indexOf(currentDefault));
+		emitRowChanged(m_accounts.indexOf(oldDef));
 	}
-
-	m_defaults[account->type()] = account;
-	emitRowChanged(m_accounts.indexOf(currentDefault));
-
-	m_latest = account;
-	emit latestChanged();
-
+	if(newDef)
+	{
+		emitRowChanged(m_accounts.indexOf(newDef));
+	}
 	scheduleSave();
-}
-
-void AccountModel::unsetDefault(BaseAccountType *type)
-{
-	if(!m_defaults.contains(type))
-		return;
-
-	int row = m_accounts.indexOf(m_defaults[type]);
-	emitRowChanged(row);
-	m_defaults.remove(type);
-	scheduleSave();
-}
-
-void AccountModel::unsetDefault(const QString &storageId)
-{
-	auto t = type(storageId);
-	if(!t)
-		return;
-	return unsetDefault(t);
-}
-
-bool AccountModel::isDefault(BaseAccount *account) const
-{
-	return getDefault(account->type()) == account;
 }
 
 QList<BaseAccount *> AccountModel::accountsForType(BaseAccountType *type) const
@@ -342,7 +287,7 @@ bool AccountModel::hasAny(BaseAccountType *type) const
 
 bool AccountModel::hasAny(const QString &storageId) const
 {
-	auto accountType = m_typeStorageIds.key(storageId);
+	auto accountType = m_types[storageId];
 	return hasAny(accountType);
 }
 
@@ -372,9 +317,7 @@ void AccountModel::unregisterAccount(BaseAccount *account)
 	beginRemoveRows(QModelIndex(), index, index);
 	disconnect(account, &BaseAccount::changed, this, &AccountModel::accountChanged);
 
-	// FIXME: nonsense
-	m_defaults.remove(account->type());
-	//FIXME: dangerous!
+	account->unsetDefault();
 	delete account;
 	m_accounts.removeAt(index);
 	endRemoveRows();
@@ -418,14 +361,13 @@ bool AccountModel::doLoad(const QByteArray &data)
 		const QString active = ensureString(root, "activeAccount", "");
 		for (const QJsonObject &account : requireIsArrayOf<QJsonObject>(root, "accounts"))
 		{
-			// BaseAccount *acc = createAccount<MojangAccount>();
 			BaseAccount *acc = m_types["mojang"]->create();
 			acc->load(formatVersion, account);
 			accs.append(acc);
 
 			if (!active.isEmpty() && !acc->username().isEmpty() && acc->username() == active)
 			{
-				defs[acc->type()] = acc;
+				acc->setDefault();
 				m_latest = acc;
 			}
 		}
@@ -454,7 +396,7 @@ bool AccountModel::doLoad(const QByteArray &data)
 		for (const auto account : accounts)
 		{
 			const QString type = requireString(account, "type");
-			if (!m_typeStorageIds.values().contains(type))
+			if (!m_types.contains(type))
 			{
 				qWarning() << "Unable to load account of type" << type << "(unknown factory)";
 			}
@@ -472,12 +414,11 @@ bool AccountModel::doLoad(const QByteArray &data)
 			const int index = requireInteger(def, "account");
 			if (index >= 0 && index < accs.size())
 			{
-				defs[m_typeStorageIds.key(requireString(def, "type"))] = accs.at(index);
+				accs.at(index)->setDefault();
 			}
 		}
 	}
 
-	m_defaults = defs;
 	for (BaseAccount *acc : accs)
 	{
 		connect(acc, &BaseAccount::changed, this, &AccountModel::accountChanged);
@@ -496,15 +437,18 @@ QByteArray AccountModel::doSave() const
 	for (const auto account : m_accounts)
 	{
 		QJsonObject obj = account->save();
-		obj.insert("type", m_typeStorageIds[account->type()]);
+		obj.insert("type", account->type()->id());
 		accounts.append(obj);
 	}
 	QJsonArray defaults;
-	for (auto it = m_defaults.constBegin(); it != m_defaults.constEnd(); ++it)
+	for(auto type: m_types)
 	{
+		auto def = type->getDefault();
+		if(!def)
+			continue;
 		QJsonObject obj;
-		obj.insert("type", m_typeStorageIds[it.key()]);
-		obj.insert("account", m_accounts.indexOf(it.value()));
+		obj.insert("type", type->id());
+		obj.insert("account", m_accounts.indexOf(def));
 		defaults.append(obj);
 	}
 

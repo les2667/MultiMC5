@@ -23,7 +23,8 @@ class ImgurAccount : public BaseAccount
 public:
 	explicit ImgurAccount(BaseAccountType *type);
 
-	Task *createLoginTask(const QString &username, const QString &password, SessionPtr session = nullptr) override;
+	Task *createLoginTask(const QString &username, const QString &password,
+						  SessionPtr session = nullptr) override;
 	Task *createCheckTask(SessionPtr session = nullptr) override;
 	Task *createLogoutTask(SessionPtr session = nullptr) override;
 };
@@ -31,11 +32,24 @@ public:
 class ImgurAccountType : public BaseAccountType
 {
 public:
+	QString id() const override
+	{
+		return "imgur";
+	}
 	QString text() const override;
-	QString icon() const override { return "icon:imgur"; }
+	QString icon() const override
+	{
+		return "icon:imgur";
+	}
 	QString usernameText() const override;
-	QString passwordText() const override { return QString(); }
-	Type type() const override { return OAuth2Pin; }
+	QString passwordText() const override
+	{
+		return QString();
+	}
+	Type type() const override
+	{
+		return OAuth2Pin;
+	}
 	QUrl oauth2PinUrl() const override;
 	bool isAvailable() const override;
 
