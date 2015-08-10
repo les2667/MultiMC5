@@ -17,7 +17,6 @@ private:
 	static QList<std::weak_ptr<IconResourceHandler>> m_iconHandlers;
 
 	QString m_key;
-	static QString m_theme;
 
 	// the workhorse, returns QVariantMap (filename => size) for m_key/m_theme
 	QVariant get() const;

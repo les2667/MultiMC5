@@ -29,10 +29,11 @@
 #include <QDebug>
 
 #include "Json.h"
+#include <auth/AccountFileFormat.h>
 
-void MojangAccount::load(const int formatVersion, const QJsonObject &object)
+void MojangAccount::load(AccountFileFormat formatVersion, const QJsonObject &object)
 {
-	if (formatVersion == 2 || formatVersion == 3)
+	if (formatVersion == OldMultiMC || formatVersion == MultiAuth)
 	{
 		using namespace Json;
 
@@ -45,7 +46,7 @@ void MojangAccount::load(const int formatVersion, const QJsonObject &object)
 
 		BaseAccount::load(formatVersion, object);
 
-		if (formatVersion == 2)
+		if (formatVersion == OldMultiMC)
 		{
 			setClientToken(ensureString(object, "clientToken"));
 			setAccessToken(ensureString(object, "accessToken"));
@@ -64,12 +65,18 @@ void MojangAccount::load(const int formatVersion, const QJsonObject &object)
 			const QString id = ensureString(profileObject, "id", "");
 			const QString name = ensureString(profileObject, "name", "");
 			const bool legacy = ensureBoolean(profileObject, QStringLiteral("legacy"), false);
+			const bool def = ensureBoolean(profileObject, QStringLiteral("default"), false);
 			if (id.isEmpty() || name.isEmpty())
 			{
 				qWarning() << "Unable to load a profile because it was missing an ID or a name.";
 				continue;
 			}
-			m_profiles.append({id, name, legacy});
+			auto prof = new MojangProfile{this, id, name, legacy};
+			m_profiles.append(prof);
+			if(def)
+			{
+				prof->setDefault();
+			}
 		}
 
 		if (object.value("user").isObject())
@@ -94,13 +101,17 @@ QJsonObject MojangAccount::save() const
 	QJsonObject json = BaseAccount::save();
 
 	QJsonArray profileArray;
-	for (AccountProfile profile : m_profiles)
+	for (MojangProfile *profile : m_profiles)
 	{
 		QJsonObject profileObj;
-		profileObj.insert("id", profile.id);
-		profileObj.insert("name", profile.name);
-		profileObj.insert("legacy", profile.legacy);
+		profileObj.insert("id", profile->m_id);
+		profileObj.insert("name", profile->m_name);
+		profileObj.insert("legacy", profile->m_legacy);
 		profileArray.append(profileObj);
+		if(profile->isDefault())
+		{
+			profileObj.insert("default", true);
+		}
 	}
 	json.insert("profiles", profileArray);
 
@@ -119,29 +130,14 @@ QJsonObject MojangAccount::save() const
 	}
 	json.insert("user", userStructure);
 
-	if (m_currentProfile != -1)
-		json.insert("activeProfile", currentProfile().id);
+	if (m_currentProfile != nullptr)
+	{
+		json.insert("activeProfile", m_currentProfile->profileId());
+	}
 
 	return json;
 }
 
-QString MojangAccount::avatar() const
-{
-	if (!hasToken("uuid") || token("uuid").isEmpty())
-	{
-		return QString();
-	}
-	return "web:https://crafatar.com/avatars/" + token("uuid");
-}
-
-QString MojangAccount::bigAvatar() const
-{
-	if (!hasToken("uuid") || token("uuid").isEmpty())
-	{
-		return QString();
-	}
-	return "web:https://crafatar.com/renders/body/" + token("uuid");
-}
 
 Task *MojangAccount::createLoginTask(const QString &username, const QString &password, SessionPtr session)
 {
@@ -177,24 +173,16 @@ Task *MojangAccount::createLogoutTask(SessionPtr session)
 
 bool MojangAccount::setCurrentProfile(const QString &profileId)
 {
-	setToken("uuid", profileId);
 	for (int i = 0; i < m_profiles.length(); i++)
 	{
-		if (m_profiles[i].id == profileId)
+		if (m_profiles[i]->profileId() == profileId)
 		{
-			m_currentProfile = i;
-			changed();
+			m_currentProfile = m_profiles[i];
+			// changed();
 			return true;
 		}
 	}
 	return false;
-}
-
-AccountProfile MojangAccount::currentProfile() const
-{
-	if (m_currentProfile == -1)
-		return {};
-	return m_profiles[m_currentProfile];
 }
 
 AccountStatus MojangAccount::accountStatus() const
@@ -205,6 +193,16 @@ AccountStatus MojangAccount::accountStatus() const
 		return Verified;
 }
 
+QString MojangAccount::avatar() const
+{
+	return "icon:mojang";
+}
+
+QString MojangAccount::bigAvatar() const
+{
+	return QString();
+}
+
 void MojangAccount::populateSessionFromThis(MojangAuthSessionPtr session)
 {
 	// the user name. you have to have an user name
@@ -213,17 +211,17 @@ void MojangAccount::populateSessionFromThis(MojangAuthSessionPtr session)
 	session->access_token = accessToken();
 	// the semi-permanent client token
 	session->client_token = clientToken();
-	if (!currentProfile().id.isEmpty())
+	if (m_currentProfile && !m_currentProfile->profileId().isEmpty())
 	{
 		// profile name
-		session->player_name = currentProfile().name;
+		session->player_name = currentProfile()->nickname();
 		// profile ID
-		session->uuid = currentProfile().id;
+		session->uuid = m_currentProfile->profileId();
 		// 'legacy' or 'mojang', depending on account type
-		session->user_type = currentProfile().legacy ? "legacy" : "mojang";
+		session->user_type = m_currentProfile->m_legacy ? "legacy" : "mojang";
 		if (!session->access_token.isEmpty())
 		{
-			session->session = "token:" + accessToken() + ":" + profiles()[m_currentProfile].id;
+			session->session = "token:" + accessToken() + ":" + m_currentProfile->profileId();
 		}
 		else
 		{

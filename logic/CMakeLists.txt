@@ -71,13 +71,21 @@ set(LOGIC_SOURCES
 	net/URLConstants.cpp
 
 	# Accounts stuff
+	auth/AccountFileFormat.h
 	auth/AccountModel.h
 	auth/AccountModel.cpp
+	auth/AccountTypesModel.h
+	auth/AccountTypesModel.cpp
+	auth/AccountStore.h
+	auth/AccountStore.cpp
 	auth/BaseAccount.h
 	auth/BaseAccount.cpp
+	auth/BaseProfile.h
+	auth/BaseProfile.cpp
 	auth/BaseSession.h
 	auth/BaseSession.cpp
 	auth/BaseAccountType.h
+	auth/BaseAccountType.cpp
 
 	# Imgur accounts
 	screenshots/auth/ImgurAccount.h

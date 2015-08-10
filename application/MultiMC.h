@@ -8,6 +8,7 @@
 #include <QDateTime>
 #include <updater/GoUpdate.h>
 
+class AccountStore;
 class GenericPageProvider;
 class QFile;
 class MinecraftVersionList;
@@ -87,9 +88,9 @@ public:
 		return m_instances;
 	}
 
-	std::shared_ptr<AccountModel> accountsModel()
+	std::shared_ptr<AccountStore> accountsStore()
 	{
-		return m_accountsModel;
+		return m_accountsStore;
 	}
 
 	// APPLICATION ONLY
@@ -165,7 +166,7 @@ private:
 	std::shared_ptr<ForgeVersionList> m_forgelist;
 	std::shared_ptr<LiteLoaderVersionList> m_liteloaderlist;
 	std::shared_ptr<MinecraftVersionList> m_minecraftlist;
-	std::shared_ptr<AccountModel> m_accountsModel;
+	std::shared_ptr<AccountStore> m_accountsStore;
 	std::shared_ptr<JavaVersionList> m_javalist;
 	std::shared_ptr<TranslationDownloader> m_translationChecker;
 	std::shared_ptr<GenericPageProvider> m_globalSettingsProvider;

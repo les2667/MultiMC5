@@ -356,6 +356,7 @@ namespace Ui {
 #include "java/JavaVersionList.h"
 
 #include "auth/AccountModel.h"
+#include <auth/BaseProfile.h>
 
 #include "updater/DownloadTask.h"
 
@@ -439,17 +440,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 		view = new GroupView(ui->centralWidget);
 
 		view->setSelectionMode(QAbstractItemView::SingleSelection);
-		// view->setCategoryDrawer(drawer);
-		// view->setCollapsibleBlocks(true);
-		// view->setViewMode(QListView::IconMode);
-		// view->setFlow(QListView::LeftToRight);
-		// view->setWordWrap(true);
-		// view->setMouseTracking(true);
-		// view->viewport()->setAttribute(Qt::WA_Hover);
 		auto delegate = new ListViewDelegate();
 		view->setItemDelegate(delegate);
-		// view->setSpacing(10);
-		// view->setUniformItemWidths(true);
 
 		// do not show ugly blue border on the mac
 		view->setAttribute(Qt::WA_MacShowFocusRect, false);
@@ -457,12 +449,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 		view->installEventFilter(this);
 
 		proxymodel = new InstanceProxyModel(this);
-		//		proxymodel->setSortRole(KCategorizedSortFilterProxyModel::CategorySortRole);
-		// proxymodel->setFilterRole(KCategorizedSortFilterProxyModel::CategorySortRole);
-		// proxymodel->setDynamicSortFilter ( true );
-
-		// FIXME: instList should be global-ish, or at least not tied to the main window...
-		// maybe the application itself?
 		proxymodel->setSourceModel(MMC->instances().get());
 		proxymodel->sort(0);
 		view->setFrameShape(QFrame::NoFrame);
@@ -476,6 +462,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 		ui->horizontalLayout->addWidget(view);
 	}
+
 	// The cat background
 	{
 		bool cat_enable = MMC->settings()->get("TheCat").toBool();
@@ -531,11 +518,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	// Update the menu when the active account changes.
 	// Shouldn't have to use lambdas here like this, but if I don't, the compiler throws a fit.
 	// Template hell sucks...
-	connect(MMC->accountsModel().get(), &AccountModel::latestChanged, this, &MainWindow::latestAccountChanged);
-	connect(MMC->accountsModel().get(), &AccountModel::listChanged, this, &MainWindow::repopulateProfilesMenu);
+	// connect(MMC->accountsStore().get(), &AccountStore::listChanged, this, &MainWindow::repopulateProfilesMenu);
 
 	// Show initial account
-	latestAccountChanged();
+	// latestAccountChanged();
 
 	// run the things that load and download other things... FIXME: this is NOT the place
 	// FIXME: invisible actions in the background = NOPE.
@@ -696,33 +682,44 @@ void MainWindow::updateToolsMenu()
 
 void MainWindow::repopulateProfilesMenu()
 {
+	//FIXME: bad.
+	static QString currentAccountType;
 	accountMenu->clear();
 
-	std::shared_ptr<AccountModel> accounts = MMC->accountsModel();
+	auto store = MMC->accountsStore();
 
-	// FIXME: get account type from selected instance, only populate with accounts that fit type.
-	if (accounts->rowCount() == 0)
+	if(m_selectedInstance)
 	{
-		QAction *action = new QAction(tr("No accounts added!"), this);
+		currentAccountType = m_selectedInstance->accountType();
+	}
+
+	auto accounts = store->accountsForType(currentAccountType);
+
+	if (accounts.size() == 0)
+	{
+		QAction *action = new QAction(tr("No %1 accounts added!").arg(currentAccountType), this);
 		action->setEnabled(false);
 		accountMenu->addAction(action);
 	}
 	else
 	{
-		// FIXME: use profiles, not accounts!
-		for (int i = 0; i < accounts->rowCount(); i++)
+		for (auto account: accounts)
 		{
-			BaseAccount *account = accounts->getAccount(accounts->index(i));
-			QAction *action = new QAction(account->username(), this);
-			action->setData(qVariantFromValue(account));
-			action->setCheckable(true);
-			if (account->isDefault())
+			for(int i = 0; i < account->size(); i++)
 			{
-				action->setChecked(true);
+				auto profile = account->operator[](i);
+				QAction *action = new QAction(profile->nickname(), this);
+				action->setData(qVariantFromValue(profile));
+				action->setCheckable(true);
+				if (account->isDefault())
+				{
+					action->setChecked(true);
+				}
+				Resource::create(profile->avatar(), Resource::create("icon:hourglass"))->applyTo(action);
+				accountMenu->addAction(action);
+				connect(action, &QAction::triggered, this, &MainWindow::makeAccountGlobalDefault);
 			}
-			Resource::create(account->avatar(), Resource::create("icon:hourglass"))->applyTo(action);
-			accountMenu->addAction(action);
-			connect(action, &QAction::triggered, this, &MainWindow::makeAccountGlobalDefault);
+
 		}
 	}
 	accountMenu->addSeparator();
@@ -735,11 +732,12 @@ void MainWindow::repopulateProfilesMenu()
 void MainWindow::makeAccountGlobalDefault()
 {
 	QAction *action = qobject_cast<QAction *>(sender());
-	auto acct = action->data().value<BaseAccount *>();
-	if(acct)
-		acct->setDefault();
+	auto prof = action->data().value<BaseProfile *>();
+	if(prof)
+		prof->setDefault();
 }
 
+/*
 void MainWindow::latestAccountChanged()
 {
 	repopulateProfilesMenu();
@@ -756,6 +754,7 @@ void MainWindow::latestAccountChanged()
 		Resource::create("icon:noaccount")->applyTo(accountMenuButton);
 	}
 }
+*/
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *ev)
 {
@@ -1093,7 +1092,7 @@ void MainWindow::instanceFromVersion(QString instName, QString instGroup, QStrin
 void MainWindow::finalizeInstance(InstancePtr inst)
 {
 	auto acctType = inst->accountType();
-	if(acctType.isEmpty() || MMC->accountsModel()->hasAny(acctType))
+	if(acctType.isEmpty() || MMC->accountsStore()->hasAny(acctType))
 	{
 		ProgressDialog loadDialog(this);
 		auto update = inst->createUpdateTask();

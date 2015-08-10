@@ -21,10 +21,13 @@
 #include <memory>
 
 class BaseAccount;
+class BaseProfile;
 class QString;
 
 class BaseAccountType : public QObject
 {
+	friend class BaseProfile;
+	friend class BaseAccount;
 	Q_OBJECT
 public:
 	virtual ~BaseAccountType()
@@ -89,43 +92,31 @@ public:
 		return true;
 	}
 
-	BaseAccount * getDefault() const
+	bool isDefault(const BaseAccount * account) const;
+	bool isDefault(const BaseProfile * profile) const;
+
+	BaseAccount * getDefaultAccount()
 	{
-		return m_default;
+		return m_defaultAccount;
 	}
 
-	void setDefault(BaseAccount * def, bool initial = false)
+	BaseProfile * getDefaultProfile()
 	{
-		if(m_default != def)
-		{
-			auto keep = m_default;
-			m_default = def;
-			if(!initial)
-			{
-				emit defaultChanged(keep, def);
-			}
-		}
-	}
-
-	void unsetDefault()
-	{
-		if(m_default)
-		{
-			auto keep = m_default;
-			m_default = nullptr;
-			emit defaultChanged(keep, m_default);
-		}
-	}
-
-	bool isDefault(BaseAccount * acct)
-	{
-		return m_default == acct;
+		return m_defaultProfile;
 	}
 
 signals:
-	void defaultChanged(BaseAccount * oldDef, BaseAccount * newDef);
-private:
-	BaseAccount * m_default = nullptr;
-};
+	void defaultProfileChanged(BaseProfile * oldDef, BaseProfile * newDef);
+	void defaultAccountChanged(BaseAccount * oldDef, BaseAccount * newDef);
 
-Q_DECLARE_METATYPE(BaseAccountType *)
+protected:
+	bool notifyDefaultAccount(BaseAccount * account);
+	bool notifyDefaultProfile(BaseProfile * profile);
+
+private:
+	void setDefault(BaseAccount * account, BaseProfile * profile);
+
+private:
+	BaseAccount * m_defaultAccount = nullptr;
+	BaseProfile * m_defaultProfile = nullptr;
+};

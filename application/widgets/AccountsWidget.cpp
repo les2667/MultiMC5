@@ -11,6 +11,7 @@
 #include "auth/BaseAccount.h"
 #include "auth/BaseAccountType.h"
 #include "auth/AccountModel.h"
+#include <auth/BaseProfile.h>
 #include "tasks/Task.h"
 #include "BaseInstance.h"
 #include "Env.h"
@@ -34,7 +35,7 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 	ui->view->setSelectionMode(QAbstractItemView::SingleSelection);
 	ui->view->setSelectionBehavior(QAbstractItemView::SelectRows);
 	ui->view->setAllColumnsShowFocus(true);
-	auto model = ResourceProxyModel::mixin<QIcon>(MMC->accountsModel().get());
+	auto model = ResourceProxyModel::mixin<QIcon>(new AccountModel(MMC->accountsStore()));
 	ui->view->setModel(model);
 
 	connect(ui->view->selectionModel(), &QItemSelectionModel::currentChanged, this, &AccountsWidget::currentChanged);
@@ -50,7 +51,7 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 		head->setSectionResizeMode(i, QHeaderView::ResizeToContents);
 
 	BaseAccount *def;
-	if (m_requestedType && (def = m_requestedType->getDefault()))
+	if (m_requestedType && (def = m_requestedType->getDefaultAccount()))
 	{
 		for(int i = 0; i < model->rowCount(); i++)
 		{
@@ -59,10 +60,9 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 			if(acct == def)
 			{
 				ui->view->setCurrentIndex(model->index(i, 0));
-				// need to delay invocation since signals get emitted that we haven't connected to yet
-				QMetaObject::invokeMethod(this, "on_useBtn_clicked", Qt::QueuedConnection);
 			}
 		}
+		launch(def);
 	}
 }
 
@@ -87,7 +87,8 @@ void AccountsWidget::setOfflineEnabled(const bool enabled, const QString &text)
 
 BaseAccount *AccountsWidget::account() const
 {
-	return MMC->accountsModel()->getAccount(ui->view->currentIndex());
+	// FIXME: complete bullshit.
+	return MMC->accountsStore()->getAccount(ui->view->currentIndex().row());
 }
 
 void AccountsWidget::on_addBtn_clicked()
@@ -97,7 +98,7 @@ void AccountsWidget::on_addBtn_clicked()
 		AccountLoginDialog dlg(this);
 		if (dlg.exec() == QDialog::Accepted)
 		{
-			MMC->accountsModel()->registerAccount(dlg.account());
+			MMC->accountsStore()->registerAccount(dlg.account());
 		}
 	}
 	else
@@ -105,7 +106,7 @@ void AccountsWidget::on_addBtn_clicked()
 		AccountLoginDialog dlg(m_requestedType, this);
 		if (dlg.exec() == QDialog::Accepted)
 		{
-			MMC->accountsModel()->registerAccount(dlg.account());
+			MMC->accountsStore()->registerAccount(dlg.account());
 		}
 	}
 }
@@ -113,7 +114,7 @@ void AccountsWidget::on_addBtn_clicked()
 void AccountsWidget::on_removeBtn_clicked()
 {
 	bool remove = false;
-	BaseAccount *account = MMC->accountsModel()->getAccount(ui->view->currentIndex());
+	BaseAccount *account = MMC->accountsStore()->getAccount(ui->view->currentIndex().row());
 	if (!account)
 		return;
 
@@ -128,13 +129,13 @@ void AccountsWidget::on_removeBtn_clicked()
 		{
 			ProgressDialog(this).exec(task);
 		}
-		MMC->accountsModel()->unregisterAccount(account);
+		MMC->accountsStore()->unregisterAccount(account);
 	}
 }
 
 void AccountsWidget::on_globalDefaultBtn_clicked(bool checked)
 {
-	BaseAccount *account = MMC->accountsModel()->getAccount(ui->view->currentIndex());
+	BaseAccount *account = MMC->accountsStore()->getAccount(ui->view->currentIndex().row());
 	if (account)
 	{
 		if (checked)
@@ -148,40 +149,45 @@ void AccountsWidget::on_globalDefaultBtn_clicked(bool checked)
 	}
 }
 
-void AccountsWidget::on_useBtn_clicked()
+void AccountsWidget::launch(BaseAccount *account)
 {
-	BaseAccount *account = MMC->accountsModel()->getAccount(ui->view->currentIndex());
-	if (account)
+	ui->groupBox->setEnabled(false);
+	ui->useBtn->setEnabled(false);
+	ui->view->setEnabled(false);
+	ui->offlineBtn->setEnabled(false);
+	ui->progressWidget->setVisible(true);
+	std::shared_ptr<Task> task = std::shared_ptr<Task>(account->createCheckTask(m_session));
+	if(task)
 	{
-		ui->groupBox->setEnabled(false);
-		ui->useBtn->setEnabled(false);
-		ui->view->setEnabled(false);
-		ui->offlineBtn->setEnabled(false);
-		ui->progressWidget->setVisible(true);
-		std::shared_ptr<Task> task = std::shared_ptr<Task>(account->createCheckTask(m_session));
-		if(task)
-		{
-			ui->progressWidget->exec(task);
-			ui->progressWidget->setVisible(false);
+		ui->progressWidget->exec(task);
+		ui->progressWidget->setVisible(false);
 
-			if (task->successful())
-			{
-				emit accepted();
-				return;
-			}
-		}
-		AccountLoginDialog dlg(account, this);
-		if (dlg.exec() == AccountLoginDialog::Accepted)
+		if (task->successful())
 		{
 			emit accepted();
+			return;
 		}
-		else
-		{
-			ui->groupBox->setEnabled(true);
-			ui->useBtn->setEnabled(true);
-			ui->view->setEnabled(true);
-			ui->offlineBtn->setEnabled(m_offlineEnabled);
-		}
+	}
+	AccountLoginDialog dlg(account, this);
+	if (dlg.exec() == AccountLoginDialog::Accepted)
+	{
+		emit accepted();
+	}
+	else
+	{
+		ui->groupBox->setEnabled(true);
+		ui->useBtn->setEnabled(true);
+		ui->view->setEnabled(true);
+		ui->offlineBtn->setEnabled(m_offlineEnabled);
+	}
+}
+
+void AccountsWidget::on_useBtn_clicked()
+{
+	BaseAccount *account = MMC->accountsStore()->getAccount(ui->view->currentIndex().row());
+	if (account)
+	{
+		launch(account);
 	}
 }
 
@@ -211,7 +217,7 @@ void AccountsWidget::currentChanged(const QModelIndex &current, const QModelInde
 	}
 	else
 	{
-		BaseAccount *account = MMC->accountsModel()->getAccount(current);
+		BaseAccount *account = MMC->accountsStore()->getAccount(current.row());
 		ui->groupBox->setEnabled(true);
 		Resource::create(account->bigAvatar(), Resource::create("icon:hourglass"))->applyTo(ui->avatarLbl);
 		ui->usernameLbl->setText(account->username());

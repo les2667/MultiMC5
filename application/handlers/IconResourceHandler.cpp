@@ -4,7 +4,6 @@
 #include <QDir>
 #include <QDebug>
 
-QString IconResourceHandler::m_theme = "multimc";
 QList<std::weak_ptr<IconResourceHandler>> IconResourceHandler::m_iconHandlers;
 
 IconResourceHandler::IconResourceHandler(const QString &key)
@@ -14,8 +13,6 @@ IconResourceHandler::IconResourceHandler(const QString &key)
 
 void IconResourceHandler::setTheme(const QString &theme)
 {
-	m_theme = theme;
-
 	// notify everyone
 	for (auto handler : m_iconHandlers)
 	{

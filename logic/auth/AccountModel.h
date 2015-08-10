@@ -16,18 +16,9 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <memory>
-#include <map>
-#include "BaseConfigObject.h"
-#include "BaseAccount.h"
-#include "BaseAccountType.h"
+#include "AccountStore.h"
 
-class Container;
-class AccountTypesModel;
-class BaseInstance;
-using InstancePtr = std::shared_ptr<BaseInstance>;
-
-class AccountModel : public QAbstractListModel, public BaseConfigObject
+class AccountModel : public QAbstractItemModel
 {
 	Q_OBJECT
 
@@ -39,8 +30,8 @@ class AccountModel : public QAbstractListModel, public BaseConfigObject
 	};
 
 public:
-	explicit AccountModel();
-	~AccountModel();
+	explicit AccountModel(AccountStorePtr store);
+	virtual ~AccountModel() {};
 
 	virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
 	virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
@@ -48,60 +39,13 @@ public:
 	virtual int columnCount(const QModelIndex &parent) const;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 	virtual Qt::ItemFlags flags(const QModelIndex &index) const;
-
-	void registerType(BaseAccountType * type);
-
-	BaseAccountType *type(const QString & storageId) const
-	{
-		auto iter = m_types.find(storageId);
-		if(iter == m_types.end())
-			return nullptr;
-		return *iter;
-	}
-
-	//FIXME: won't work through generic sort&filter proxy
-	BaseAccount *getAccount(const QModelIndex &index) const;
-
-	/// The latest account is the account that was most recently changed
-	BaseAccount *latest() const
-	{
-		return m_latest;
-	}
-
-	QList<BaseAccount *> accountsForType(BaseAccountType *type) const;
-	QList<BaseAccount *> accountsForType(const QString& storageId) const;
-
-	bool hasAny(BaseAccountType *type) const;
-	bool hasAny(const QString & storageId) const;
-
-	QAbstractItemModel *typesModel() const;
-
-signals:
-	void listChanged();
-	void latestChanged();
-
-public slots:
-	void registerAccount(BaseAccount *account);
-	void unregisterAccount(BaseAccount *account);
-
-private slots:
-	void accountChanged();
-	void defaultChanged(BaseAccount *oldDef, BaseAccount *newDef);
-
-protected:
-	bool doLoad(const QByteArray &data) override;
-	QByteArray doSave() const override;
+	virtual QModelIndex parent(const QModelIndex &child) const;
+	virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
 
 private:
-	void emitRowChanged(int row);
+	QVariant accountData(BaseAccount * account, int column, int role) const;
+	QVariant profileData(BaseProfile * profile, int column, int role) const;
 
-	BaseAccount *m_latest = nullptr;
-
-	// mappings between type name and type
-	QMap<QString, BaseAccountType *> m_types;
-
-	// stored account types
-	AccountTypesModel *m_typesModel;
-
-	QList<BaseAccount *> m_accounts;
+private:
+	AccountStorePtr m_store;
 };

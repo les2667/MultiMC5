@@ -52,7 +52,9 @@ void ImgurAuthenticateTask::handleResponse(const QJsonObject &obj)
 	const QString accessToken = requireString(obj, "access_token");
 	const QString refreshToken = requireString(obj, "refresh_token");
 	const QString username = requireString(obj, "account_username");
+	const QString account_id = requireString(obj, "account_id");
 	m_account->setUsername(username);
+	m_account->setToken("account_id", account_id);
 	m_account->setToken("accessToken", accessToken);
 	m_account->setToken("refreshToken", refreshToken);
 }

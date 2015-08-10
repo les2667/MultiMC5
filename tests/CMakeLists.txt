@@ -9,7 +9,7 @@ include_directories(${MMC_SRC} ${CMAKE_CURRENT_SOURCE_DIR} ${MMC_SRC}/logic ${MM
 # it can contain an include for ModelTester.h and/or TestUtil.h, in which case they will be
 # compiled into the executable
 set(tests
-	logic/auth/tst_AccountModel.cpp
+	logic/auth/tst_AccountStore.cpp
 	logic/minecraft/auth/tasks/tst_AuthenticateTask.cpp
 	logic/minecraft/auth/tasks/tst_RefreshTask.cpp
 	logic/minecraft/auth/tasks/tst_ValidateTask.cpp

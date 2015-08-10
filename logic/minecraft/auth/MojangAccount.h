@@ -26,6 +26,8 @@
 #include "MojangAuthSession.h"
 #include "auth/BaseAccount.h"
 #include "auth/BaseAccountType.h"
+#include <auth/BaseProfile.h>
+#include <auth/AccountFileFormat.h>
 
 class Task;
 class YggdrasilTask;
@@ -41,11 +43,59 @@ Q_DECLARE_METATYPE(MojangAccountPtr)
  * but we might as well add some things for it in MultiMC right now so
  * we don't have to rip the code to pieces to add it later.
  */
-struct AccountProfile
+class MojangProfile: public BaseProfile
 {
-	QString id;
-	QString name;
-	bool legacy;
+public:
+	MojangProfile(BaseAccount * parent, QString id, QString name, bool legacy) : BaseProfile(parent)
+	{
+		m_id = id, m_name = name, m_legacy = legacy;
+	}
+	virtual ~MojangProfile() {};
+	virtual QString nickname() const
+	{
+		return m_name;
+	}
+	virtual QString profileId() const
+	{
+		return m_id;
+	}
+	virtual void setNickname(const QString &nickname)
+	{
+		m_name = nickname;
+	}
+	virtual void setProfileId(const QString &id)
+	{
+		m_id = id;
+	}
+	virtual QString avatar() const
+	{
+		if(m_id.isEmpty())
+		{
+			return QString();
+		}
+		return "web:https://crafatar.com/avatars/" + m_id;
+	}
+	virtual QString bigAvatar() const
+	{
+		if (m_id.isEmpty())
+		{
+			return QString();
+		}
+		return "web:https://crafatar.com/renders/body/" + m_id;
+	}
+
+	virtual QString typeText() const override
+	{
+		return "Minecraft";
+	}
+	virtual QString typeIcon() const override
+	{
+		return "icon:minecraft";
+	}
+
+	QString m_name;
+	QString m_id;
+	bool m_legacy;
 };
 
 enum AccountStatus
@@ -69,16 +119,19 @@ enum AccountStatus
  */
 class MojangAccount : public BaseAccount
 {
-	Q_OBJECT
 public: /* construction */
 	//! Default constructor
 	explicit MojangAccount(BaseAccountType *type)
 		: BaseAccount(type)
 	{
 	}
+	virtual ~MojangAccount()
+	{
+		qDeleteAll(m_profiles);
+	}
 
 	//! Loads a MojangAccount from the given JSON object.
-	void load(const int formatVersion, const QJsonObject &json);
+	void load(AccountFileFormat formatVersion, const QJsonObject &json) override;
 
 	//! Saves a MojangAccount to a JSON object and returns it.
 	QJsonObject save() const override;
@@ -99,15 +152,15 @@ public: /* manipulation */
 	 */
 	bool setCurrentProfile(const QString &profileId);
 
-	void setProfiles(const QList<AccountProfile> &profiles)
+	void setProfiles(const QList<MojangProfile *> &profiles)
 	{
 		m_profiles = profiles;
-		changed();
+		// changed();
 	}
 	void setUser(const MojangAuthSession::User &user)
 	{
 		m_user = user;
-		changed();
+		// changed();
 	}
 
 	// Used to identify the client - the user can have multiple clients for the same account
@@ -131,7 +184,7 @@ public: /* manipulation */
 	}
 
 public: /* queries */
-	QList<AccountProfile> profiles() const
+	QList<MojangProfile *> profiles() const
 	{
 		return m_profiles;
 	}
@@ -142,18 +195,31 @@ public: /* queries */
 	}
 
 	//! Returns the currently selected profile (if none, returns nullptr)
-	AccountProfile currentProfile() const;
+	virtual BaseProfile *currentProfile() override
+	{
+		return m_currentProfile;
+	}
+	virtual BaseProfile *operator[](std::size_t index) override
+	{
+		if(index < size())
+			return m_profiles[index];
+		else
+			return nullptr;
+	}
+	virtual std::size_t size() const override
+	{
+		return m_profiles.size();
+	}
 
 	//! Returns whether the account is NotVerified, Verified or Online
 	AccountStatus accountStatus() const;
 
 protected: /* variables */
-	// Index of the selected profile within the list of available
-	// profiles. -1 if nothing is selected.
-	int m_currentProfile = -1;
+	// selected profile within the list of available
+	MojangProfile * m_currentProfile = nullptr;
 
 	// List of available profiles.
-	QList<AccountProfile> m_profiles;
+	QList<MojangProfile *> m_profiles;
 
 	// the user structure, whatever it is.
 	MojangAuthSession::User m_user;

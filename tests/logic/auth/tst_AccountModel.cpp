@@ -4,38 +4,13 @@
 #include <QTemporaryDir>
 
 #include "logic/auth/AccountModel.h"
-#include "logic/auth/BaseAccountType.h"
-#include "logic/auth/BaseAccount.h"
+
+#include <auth/AccountStore.h>
 #include "logic/minecraft/auth/MojangAccount.h"
 #include "logic/FileSystem.h"
 #include "logic/Json.h"
 #include <screenshots/auth/ImgurAccount.h>
 #include "tests/TestUtil.h"
-
-class AsdfAccount : public BaseAccount
-{
-public:
-	explicit AsdfAccount(BaseAccountType *type) : BaseAccount(type) {}
-
-	Task *createLoginTask(const QString &username, const QString &password, SessionPtr session) override { return nullptr; }
-	Task *createCheckTask(SessionPtr session) override { return nullptr; }
-	Task *createLogoutTask(SessionPtr session) override { return nullptr; }
-};
-class AsdfAccountType : public BaseAccountType
-{
-public:
-	QString id() const override { return "asdf"; }
-	QString text() const override { return QString(); }
-	QString icon() const override { return QString(); }
-	QString usernameText() const override { return QString(); }
-	QString passwordText() const override { return QString(); }
-	Type type() const override { return UsernamePassword; }
-
-	virtual BaseAccount *create()
-	{
-		return new AsdfAccount(this);
-	}
-};
 
 class AccountModelTest : public ModelTester
 {
@@ -43,12 +18,12 @@ class AccountModelTest : public ModelTester
 public:
 	std::shared_ptr<QAbstractItemModel> createModel(const int = 0) const override
 	{
-		auto m = std::make_shared<AccountModel>();
-		m->registerType(new MojangAccountType());
-		m->registerType(new ImgurAccountType());
-		m->registerType(new AsdfAccountType());
-		m->setSaveTimeout(INT_MAX);
-		return m;
+		auto store = std::make_shared<AccountStore>();
+		store->registerType(new MojangAccountType());
+		store->registerType(new ImgurAccountType());
+		store->registerType(new AsdfAccountType());
+		store->setSaveTimeout(INT_MAX);
+		return store;
 	}
 	void populate(std::shared_ptr<QAbstractItemModel> model, const int = 0) const override
 	{
@@ -71,9 +46,13 @@ private:
 			QCOMPARE(first->clientToken(), QString("f11bc5a96e8428cae87df606c6ed05cb"));
 			QCOMPARE(first->accessToken(), QString("214c57e4fe0b58253e3409cdd5e63053"));
 			QCOMPARE(first->profiles().size(), 1);
-			QCOMPARE(first->profiles().first().id, QString("d716718a0ede7865c8a4a00e9cb1b6f5"));
-			QCOMPARE(first->profiles().first().legacy, false);
-			QCOMPARE(first->profiles().first().name, QString("IWantTea"));
+			{
+				auto prof = first->profiles().first();
+				QVERIFY(prof);
+				QCOMPARE(prof->profileId(), QString("d716718a0ede7865c8a4a00e9cb1b6f5"));
+				QCOMPARE(prof->m_legacy, false);
+				QCOMPARE(prof->nickname(), QString("IWantTea"));
+			}
 
 			MojangAccount *second = dynamic_cast<MojangAccount *>(model->accountsForType("mojang").at(1));
 			QVERIFY(second);
@@ -81,9 +60,13 @@ private:
 			QCOMPARE(second->clientToken(), QString("d03a2bcf2d1cc467042c7b2680ba947d"));
 			QCOMPARE(second->accessToken(), QString("204fe2edcee69f8c207c392e6cc25c9c"));
 			QCOMPARE(second->profiles().size(), 1);
-			QCOMPARE(second->profiles().first().id, QString("40db0352edab1d1afb8443a34680ef10"));
-			QCOMPARE(second->profiles().first().legacy, false);
-			QCOMPARE(second->profiles().first().name, QString("IAmTheBest"));
+			{
+				auto prof = second->profiles().first();
+				QVERIFY(prof);
+				QCOMPARE(prof->profileId(), QString("40db0352edab1d1afb8443a34680ef10"));
+				QCOMPARE(prof->m_legacy, false);
+				QCOMPARE(prof->nickname(), QString("IAmTheBest"));
+			}
 
 			QVERIFY(first->isDefault());
 		};
@@ -137,44 +120,44 @@ private slots:
 		QVERIFY(account);
 		QCOMPARE(model->hasAny("mojang"), true);
 		QCOMPARE(model->accountsForType("mojang"), QList<BaseAccount *>() << account);
-		QCOMPARE(model->latest(), account);
 	}
 
 	void test_Defaults()
 	{
 		TestsInternal::setupTestingEnv();
 
+		QFile::copy(QFINDTESTDATA("tests/data/accounts_v3.json"), "accounts.json");
 		std::shared_ptr<AccountModel> model = std::dynamic_pointer_cast<AccountModel>(createModel());
-		populate(model);
-		populate(model);
 
-		InstancePtr instance1 = TestsInternal::createInstance();
-		InstancePtr instance2 = TestsInternal::createInstance();
+		// load old format, ensure we loaded the right thing
+		QVERIFY(model->loadNow());
 
-		BaseAccount *acc1 = model->getAccount(model->index(0, 0));
-		BaseAccount *acc2 = model->getAccount(model->index(1, 0));
-		BaseAccount *accNull = nullptr;
-		QVERIFY(acc1);
-		QVERIFY(acc2);
+		BaseAccount *arthur = model->getAccount(model->index(0, 0));
+		auto arthurProfile = arthur->currentProfile();
+		BaseAccount *zaphod = model->getAccount(model->index(1, 0));
+		auto zaphodProfile = zaphod->currentProfile();
+
+		BaseProfile *profNull = nullptr;
+		QVERIFY(arthur);
+		QVERIFY(zaphod);
 
 		auto mojang = model->type("mojang");
-		auto asdf = model->type("asdf");
 		QVERIFY(mojang);
-		QVERIFY(asdf);
 
-		// no default set
-		QCOMPARE(mojang->getDefault(), accNull);
-		QCOMPARE(asdf->getDefault(), accNull);
+		// first profile of first account is the default... as loaded from file
+		QCOMPARE(mojang->getDefault(), arthurProfile);
 
-		acc2->setDefault();
 		// global default
-		QCOMPARE(mojang->getDefault(), acc2);
-		QCOMPARE(asdf->getDefault(), accNull);
+		zaphod->setDefault();
+		QCOMPARE(zaphod->operator[](0)->isDefault(), true);
+		QCOMPARE(mojang->getDefault(), zaphod->operator[](0));
 
+
+		// unset by type
 		mojang->unsetDefault();
-		// unsetting global default
-		QCOMPARE(mojang->getDefault(), accNull);
-		QCOMPARE(asdf->getDefault(), accNull);
+		QCOMPARE(mojang->getDefault(), profNull);
+		QCOMPARE(zaphod->isDefault(), false);
+		QCOMPARE(zaphod->operator[](0)->isDefault(), false);
 	}
 };
 

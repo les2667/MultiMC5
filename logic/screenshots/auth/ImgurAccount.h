@@ -15,8 +15,10 @@
 
 #pragma once
 
+#include "auth/BaseProfile.h"
 #include "auth/BaseAccount.h"
 #include "auth/BaseAccountType.h"
+
 
 class ImgurAccount : public BaseAccount
 {
@@ -27,6 +29,18 @@ public:
 						  SessionPtr session = nullptr) override;
 	Task *createCheckTask(SessionPtr session = nullptr) override;
 	Task *createLogoutTask(SessionPtr session = nullptr) override;
+	virtual BaseProfile *operator[](std::size_t index) override
+	{
+		return nullptr;
+	}
+	virtual std::size_t size() const override
+	{
+		return 0;
+	}
+	virtual BaseProfile *currentProfile() override
+	{
+		return nullptr;
+	}
 };
 
 class ImgurAccountType : public BaseAccountType

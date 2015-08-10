@@ -8,6 +8,7 @@
 #include "auth/AccountModel.h"
 #include "auth/BaseAccount.h"
 #include "auth/BaseAccountType.h"
+#include <auth/AccountTypesModel.h>
 #include "tasks/Task.h"
 #include "resources/ResourceProxyModel.h"
 #include "MultiMC.h"
@@ -21,7 +22,8 @@ AccountLoginDialog::AccountLoginDialog(QWidget *parent) :
 	ui->progressWidget->setVisible(false);
 	ui->errorLbl->setVisible(false);
 	ui->userTextBox->setFocus();
-	ui->typeBox->setModel(ResourceProxyModel::mixin<QIcon>(MMC->accountsModel()->typesModel()));
+	auto model = new AccountTypesModel(MMC->accountsStore());
+	ui->typeBox->setModel(ResourceProxyModel::mixin<QIcon>(model));
 
 	connect(ui->typeBox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &AccountLoginDialog::currentTypeChanged);
 	currentTypeChanged(0);

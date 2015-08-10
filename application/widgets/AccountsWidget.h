@@ -40,6 +40,9 @@ private slots:
 	void currentChanged(const QModelIndex &current, const QModelIndex &previous);
 
 private:
+	void launch(BaseAccount *account);
+
+private:
 	Ui::AccountsWidget *ui;
 	InstancePtr m_instance;
 	SessionPtr m_session;

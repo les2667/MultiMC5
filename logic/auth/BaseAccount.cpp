@@ -19,23 +19,23 @@
 #include "AccountModel.h"
 
 BaseAccount::BaseAccount(BaseAccountType *type)
-	: QObject(), m_type(type)
+	:m_type(type)
 {
 }
 
 void BaseAccount::setUsername(const QString &username)
 {
 	m_username = username;
-	emit changed();
+	// emit changed();
 }
 
 void BaseAccount::setToken(const QString &key, const QString &token)
 {
 	m_tokens.insert(key, token);
-	emit changed();
+	// emit changed();
 }
 
-void BaseAccount::load(const int formatVersion, const QJsonObject &obj)
+void BaseAccount::load(AccountFileFormat formatVersion, const QJsonObject &obj)
 {
 	using namespace Json;
 	m_username = requireString(obj, "username");
@@ -44,6 +44,11 @@ void BaseAccount::load(const int formatVersion, const QJsonObject &obj)
 	for (auto it = tokens.constBegin(); it != tokens.constEnd(); ++it)
 	{
 		m_tokens.insert(it.key(), requireString(it.value()));
+	}
+	bool isDef = ensureBoolean(obj, QString("default"), false);
+	if(isDef)
+	{
+		setDefault();
 	}
 }
 
@@ -57,23 +62,40 @@ QJsonObject BaseAccount::save() const
 		tokens.insert(it.key(), it.value());
 	}
 	obj.insert("tokens", tokens);
+	if(isDefault())
+	{
+		obj.insert("default", true);
+	}
 	return obj;
 }
 
 void BaseAccount::setDefault()
 {
-	m_type->setDefault(this);
+	// FIXME: this is possibly too minecraft-specific
+	if(currentProfile())
+	{
+		m_type->notifyDefaultProfile(currentProfile());
+	}
+	else
+	{
+		m_type->notifyDefaultAccount(this);
+	}
 }
 
 void BaseAccount::unsetDefault()
 {
-	if(m_type->isDefault(this))
+	if(isDefault())
 	{
-		m_type->unsetDefault();
+		m_type->notifyDefaultProfile(nullptr);
 	}
 }
 
-bool BaseAccount::isDefault()
+bool BaseAccount::isDefault() const
 {
 	return m_type->isDefault(this);
+}
+
+void BaseAccount::notifyDefault()
+{
+	// emit changed();
 }

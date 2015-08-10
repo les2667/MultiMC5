@@ -141,7 +141,7 @@ slots:
 
 	void notificationsChanged();
 
-	void latestAccountChanged();
+	// void latestAccountChanged();
 	void makeAccountGlobalDefault();
 	void repopulateProfilesMenu();
 

@@ -21,6 +21,7 @@
 
 #include "InstanceList.h"
 #include "auth/AccountModel.h"
+#include <auth/AccountStore.h>
 #include "icons/IconList.h"
 #include "minecraft/LwjglVersionList.h"
 #include "minecraft/MinecraftVersionList.h"
@@ -231,10 +232,10 @@ MultiMC::MultiMC(int &argc, char **argv, bool test_mode) : QApplication(argc, ar
 							 {"ImgurClientSecret", BuildConfig.IMGUR_CLIENT_SECRET}
 						 });
 
-	m_accountsModel.reset(new AccountModel);
+	m_accountsStore.reset(new AccountStore);
 	// FIXME: account plugin hook point
-	m_accountsModel->registerType(new MojangAccountType());
-	m_accountsModel->registerType(new ImgurAccountType());
+	m_accountsStore->registerType(new MojangAccountType());
+	m_accountsStore->registerType(new ImgurAccountType());
 
 	// init the http meta cache
 	ENV.initHttpMetaCache(rootPath, staticDataPath);

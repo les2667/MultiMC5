@@ -110,7 +110,7 @@ void AuthenticateTask::processResponse(const QJsonObject &responseData)
 	// but we might as well support what's there so we
 	// don't have trouble implementing it later.
 	qDebug() << "Loading profile list.";
-	QList<AccountProfile> loadedProfiles;
+	QList<MojangProfile *> loadedProfiles;
 	for (auto profile : requireIsArrayOf<QJsonObject>(responseData, "availableProfiles"))
 	{
 		// Profiles are easy, we just need their ID and name.
@@ -129,7 +129,7 @@ void AuthenticateTask::processResponse(const QJsonObject &responseData)
 		}
 
 		// Now, add a new AccountProfile entry to the list.
-		loadedProfiles.append({id, name, legacy});
+		loadedProfiles.append(new MojangProfile(m_account, id, name, legacy));
 	}
 	// Put the list of profiles we loaded into the MojangAccount object.
 	m_account->setProfiles(loadedProfiles);

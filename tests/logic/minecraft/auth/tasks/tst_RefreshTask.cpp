@@ -55,7 +55,7 @@ private slots:
 	void test_processResponse_valid()
 	{
 		auto task = createTask("asdfasdf");
-		task->account()->setProfiles({AccountProfile({"alphabeta", "help", false})});
+		task->account()->setProfiles({ new MojangProfile(task->account(), "alphabeta", "help", false)});
 		task->account()->setCurrentProfile("alphabeta");
 		task->processResponse(QJsonObject({
 								  {"clientToken", "asdfasdf"},

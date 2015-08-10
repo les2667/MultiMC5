@@ -93,7 +93,7 @@ void RefreshTask::processResponse(const QJsonObject &responseData)
 	// profile)
 	const QJsonObject currentProfile = requireObject(responseData, "selectedProfile");
 	const QString currentProfileId = ensureString(currentProfile, "id", "");
-	if (m_account->currentProfile().id != currentProfileId)
+	if (m_account->currentProfile()->profileId() != currentProfileId)
 	{
 		changeState(STATE_FAILED_HARD, tr("Authentication server didn't specify the same profile as expected."));
 		return;

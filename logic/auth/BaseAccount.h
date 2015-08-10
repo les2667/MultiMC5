@@ -21,14 +21,18 @@
 #include <QMetaType>
 #include <memory>
 #include "BaseSession.h"
+#include "AccountFileFormat.h"
+#include "BaseAccountType.h"
+#include "BaseItem.h"
 
+class BaseProfile;
 class Task;
-class BaseAccountType;
 class QJsonObject;
 
-class BaseAccount : public QObject
+
+class BaseAccount : public BaseItem
 {
-	Q_OBJECT
+	friend class BaseProfile;
 public:
 	explicit BaseAccount(BaseAccountType *type);
 	virtual ~BaseAccount()
@@ -50,7 +54,8 @@ public:
 		return avatar();
 	}
 
-	virtual Task *createLoginTask(const QString &username, const QString &password, SessionPtr session = nullptr) = 0;
+	virtual Task *createLoginTask(const QString &username, const QString &password,
+								  SessionPtr session = nullptr) = 0;
 	virtual Task *createCheckTask(SessionPtr session = nullptr) = 0;
 	virtual Task *createLogoutTask(SessionPtr session = nullptr) = 0;
 
@@ -73,19 +78,27 @@ public:
 
 	void setToken(const QString &key, const QString &token);
 
-	virtual void load(const int formatVersion, const QJsonObject &obj);
+	virtual void load(AccountFileFormat formatVersion, const QJsonObject &obj);
 	virtual QJsonObject save() const;
 
-	void setDefault();
-	void unsetDefault();
-	bool isDefault();
+	virtual void setDefault() override;
+	virtual void unsetDefault() override;
+	virtual bool isDefault() const override;
 
-signals:
-	void changed();
+	// called by base account type
+	void notifyDefault();
 
-private:
+	virtual std::size_t size() const = 0;
+	virtual BaseProfile *operator[](std::size_t index) = 0;
+	virtual BaseProfile *currentProfile() = 0;
+
+	virtual Kind getKind()
+	{
+		return BaseItem::Account;
+	}
+
+protected:
 	QString m_username;
 	QMap<QString, QString> m_tokens;
 	BaseAccountType *m_type;
 };
-

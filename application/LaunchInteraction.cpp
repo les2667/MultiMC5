@@ -13,7 +13,7 @@
 #include <launch/steps/TextPrint.h>
 #include <minecraft/auth/MojangAuthSession.h>
 #include <minecraft/auth/MojangAccount.h>
-#include <auth/AccountModel.h>
+#include <auth/AccountStore.h>
 
 LaunchController::LaunchController(QObject *parent) : QObject(parent)
 {
@@ -36,7 +36,7 @@ void LaunchController::login()
 	auto session = std::make_shared<MojangAuthSession>();
 	session->wants_online = m_online;
 	m_session = session;
-	AccountsDialog dlg(MMC->accountsModel()->type("mojang"), m_instance, m_parentWidget);
+	AccountsDialog dlg(MMC->accountsStore()->type("mojang"), m_instance, m_parentWidget);
 	dlg.setSession(m_session);
 	if (dlg.exec() != QDialog::Accepted)
 	{
