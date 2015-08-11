@@ -1,19 +1,19 @@
 #pragma once
 
-class BaseItem
+class AuthElement
 {
 public:
-	enum Kind
+	enum Type
 	{
 		Account,
-		Profile,
-		Both
+		Profile
 	};
-	virtual ~BaseItem()
+
+	virtual ~AuthElement()
 	{
 	}
 	virtual void setDefault() = 0;
 	virtual void unsetDefault() = 0;
 	virtual bool isDefault() const = 0;
-	virtual Kind getKind() = 0;
+	virtual Type getKind() = 0;
 };

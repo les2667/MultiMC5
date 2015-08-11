@@ -33,13 +33,13 @@ QModelIndex AccountModel::parent(const QModelIndex &child) const
 	if (!child.isValid())
 		return QModelIndex();
 
-	auto item = static_cast<BaseItem *>(child.internalPointer());
-	if(item->getKind() == BaseItem::Account)
+	auto item = static_cast<AuthElement *>(child.internalPointer());
+	if(item->getKind() == AuthElement::Account)
 	{
 		// account -> root
 		return QModelIndex();
 	}
-	if(item->getKind() == BaseItem::Profile)
+	if(item->getKind() == AuthElement::Profile)
 	{
 		auto prof = (BaseProfile *) item;
 		auto acc = prof->parent();
@@ -73,8 +73,8 @@ QModelIndex AccountModel::index(int row, int column, const QModelIndex &parent) 
 	// profile
 	else
 	{
-		auto item = static_cast<BaseItem *>(parent.internalPointer());
-		if(item->getKind() != BaseItem::Account)
+		auto item = static_cast<AuthElement *>(parent.internalPointer());
+		if(item->getKind() != AuthElement::Account)
 		{
 			return QModelIndex();
 		}
@@ -97,8 +97,8 @@ int AccountModel::rowCount(const QModelIndex &parent) const
 	{
 		return m_store->numAccounts();
 	}
-	auto item = static_cast<BaseItem *>(parent.internalPointer());
-	if(item->getKind() == BaseItem::Account)
+	auto item = static_cast<AuthElement *>(parent.internalPointer());
+	if(item->getKind() == AuthElement::Account)
 	{
 		auto acc = (BaseAccount *)item;
 		if(acc->size() > 1)
@@ -143,7 +143,7 @@ bool AccountModel::setData(const QModelIndex &index, const QVariant &value, int 
 		return false;
 	}
 
-	auto item = static_cast<BaseItem *>(index.internalPointer());
+	auto item = static_cast<AuthElement *>(index.internalPointer());
 	if(role == Qt::CheckStateRole)
 	{
 		if(value == Qt::Checked)
@@ -275,8 +275,8 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 		return QVariant();
 	}
 	int column = index.column();
-	auto item = static_cast<BaseItem *>(index.internalPointer());
-	if(item->getKind() == BaseItem::Account)
+	auto item = static_cast<AuthElement *>(index.internalPointer());
+	if(item->getKind() == AuthElement::Account)
 	{
 		auto account = (BaseAccount*) item;
 		if(account->size() == 1)
@@ -285,7 +285,7 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 		}
 		return accountData(account, column, role);
 	}
-	else if(item->getKind() == BaseItem::Profile)
+	else if(item->getKind() == AuthElement::Profile)
 	{
 		return profileData((BaseProfile*) item, column, role);
 	}

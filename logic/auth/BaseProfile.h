@@ -5,7 +5,7 @@
 
 class BaseAccount;
 
-class BaseProfile: public BaseItem
+class BaseProfile: public AuthElement
 {
 public:
 	BaseProfile(BaseAccount * parent)
@@ -42,9 +42,9 @@ public:
 	// called by base account type
 	void notifyDefault();
 
-	virtual Kind getKind()
+	Type getKind() final override
 	{
-		return BaseItem::Profile;
+		return Profile;
 	}
 
 protected:

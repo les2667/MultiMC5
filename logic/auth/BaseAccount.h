@@ -23,14 +23,14 @@
 #include "BaseSession.h"
 #include "AccountFileFormat.h"
 #include "BaseAccountType.h"
-#include "BaseItem.h"
+#include "AuthElement.h"
 
 class BaseProfile;
 class Task;
 class QJsonObject;
 
 
-class BaseAccount : public BaseItem
+class BaseAccount : public AuthElement
 {
 	friend class BaseProfile;
 public:
@@ -92,9 +92,9 @@ public:
 	virtual BaseProfile *operator[](std::size_t index) = 0;
 	virtual BaseProfile *currentProfile() = 0;
 
-	virtual Kind getKind()
+	Type getKind() final override
 	{
-		return BaseItem::Account;
+		return Account;
 	}
 
 protected:
