@@ -102,3 +102,4 @@ protected:
 	QMap<QString, QString> m_tokens;
 	BaseAccountType *m_type;
 };
+Q_DECLARE_METATYPE(BaseAccount *);

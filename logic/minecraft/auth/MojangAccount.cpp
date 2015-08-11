@@ -107,11 +107,11 @@ QJsonObject MojangAccount::save() const
 		profileObj.insert("id", profile->m_id);
 		profileObj.insert("name", profile->m_name);
 		profileObj.insert("legacy", profile->m_legacy);
-		profileArray.append(profileObj);
 		if(profile->isDefault())
 		{
 			profileObj.insert("default", true);
 		}
+		profileArray.append(profileObj);
 	}
 	json.insert("profiles", profileArray);
 

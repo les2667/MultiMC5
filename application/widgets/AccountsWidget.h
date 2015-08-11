@@ -31,16 +31,19 @@ signals:
 	void accepted();
 	void rejected();
 
+	//FIXME: bad.
+public slots:
+	void on_useBtn_clicked();
+
 private slots:
 	void on_addBtn_clicked();
 	void on_removeBtn_clicked();
 	void on_globalDefaultBtn_clicked(bool checked);
-	void on_useBtn_clicked();
 	void on_offlineBtn_clicked();
 	void currentChanged(const QModelIndex &current, const QModelIndex &previous);
 
 private:
-	void launch(BaseAccount *account);
+	void useAccount(BaseAccount *account);
 
 private:
 	Ui::AccountsWidget *ui;

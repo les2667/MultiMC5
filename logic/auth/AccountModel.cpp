@@ -101,7 +101,8 @@ int AccountModel::rowCount(const QModelIndex &parent) const
 	if(item->getKind() == BaseItem::Account)
 	{
 		auto acc = (BaseAccount *)item;
-		return acc->size();
+		if(acc->size() > 1)
+			return acc->size();
 	}
 	return 0;
 }
@@ -213,12 +214,10 @@ QVariant AccountModel::accountData(BaseAccount *account, int column, int role) c
 QVariant AccountModel::profileData(BaseProfile *profile, int column, int role) const
 {
 	// FIXME: nasty hack
-	/*
 	if(role == Qt::UserRole)
 	{
-		return QVariant::fromValue((void *)account);
+		return QVariant::fromValue(profile->parent());
 	}
-	*/
 	switch(column)
 	{
 		case DefaultColumn:
@@ -279,7 +278,12 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 	auto item = static_cast<BaseItem *>(index.internalPointer());
 	if(item->getKind() == BaseItem::Account)
 	{
-		return accountData((BaseAccount*) item, column, role);
+		auto account = (BaseAccount*) item;
+		if(account->size() == 1)
+		{
+			return profileData(account->operator[](0), column, role);
+		}
+		return accountData(account, column, role);
 	}
 	else if(item->getKind() == BaseItem::Profile)
 	{

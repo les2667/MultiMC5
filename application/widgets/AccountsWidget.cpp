@@ -62,7 +62,6 @@ AccountsWidget::AccountsWidget(BaseAccountType *type, InstancePtr instance, QWid
 				ui->view->setCurrentIndex(model->index(i, 0));
 			}
 		}
-		launch(def);
 	}
 }
 
@@ -75,10 +74,12 @@ void AccountsWidget::setSession(SessionPtr session)
 {
 	m_session = session;
 }
+
 void AccountsWidget::setCancelEnabled(const bool enableCancel)
 {
 	ui->cancelBtn->setVisible(enableCancel);
 }
+
 void AccountsWidget::setOfflineEnabled(const bool enabled, const QString &text)
 {
 	ui->offlineBtn->setVisible(m_offlineEnabled = enabled);
@@ -149,7 +150,7 @@ void AccountsWidget::on_globalDefaultBtn_clicked(bool checked)
 	}
 }
 
-void AccountsWidget::launch(BaseAccount *account)
+void AccountsWidget::useAccount(BaseAccount *account)
 {
 	ui->groupBox->setEnabled(false);
 	ui->useBtn->setEnabled(false);
@@ -187,7 +188,7 @@ void AccountsWidget::on_useBtn_clicked()
 	BaseAccount *account = MMC->accountsStore()->getAccount(ui->view->currentIndex().row());
 	if (account)
 	{
-		launch(account);
+		useAccount(account);
 	}
 }
 

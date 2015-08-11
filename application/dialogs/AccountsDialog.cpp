@@ -29,7 +29,9 @@ AccountsDialog::~AccountsDialog()
 void AccountsDialog::setSession(SessionPtr session)
 {
 	m_widget->setSession(session);
+	m_widget->on_useBtn_clicked();
 }
+
 BaseAccount *AccountsDialog::account() const
 {
 	return m_widget->account();
