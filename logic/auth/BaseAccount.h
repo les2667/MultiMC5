@@ -85,12 +85,10 @@ public:
 	virtual void unsetDefault() override;
 	virtual bool isDefault() const override;
 
-	// called by base account type
-	void notifyDefault();
-
 	virtual std::size_t size() const = 0;
 	virtual BaseProfile *operator[](std::size_t index) = 0;
 	virtual BaseProfile *currentProfile() = 0;
+	virtual int indexOf(BaseProfile *) = 0;
 
 	Type getKind() final override
 	{

@@ -21,6 +21,43 @@
 AccountModel::AccountModel(AccountStorePtr store) : QAbstractItemModel()
 {
 	m_store = store;
+	connect(store.get(), &AccountStore::aboutToRemove, this, &AccountModel::startRemoving);
+	connect(store.get(), &AccountStore::removalFinished, this, &AccountModel::removingFinished);
+	connect(store.get(), &AccountStore::aboutToAdd, this, &AccountModel::startAdding);
+	connect(store.get(), &AccountStore::addingFinished, this, &AccountModel::addingFinished);
+	connect(store.get(), &AccountStore::aboutToReset, this, &AccountModel::startResetting);
+	connect(store.get(), &AccountStore::resetFinished, this, &AccountModel::resettingFinished);
+	connect(store.get(), &AccountStore::itemChanged, this, &AccountModel::itemChanged);
+}
+
+void AccountModel::addingFinished()
+{
+	endInsertRows();
+}
+
+void AccountModel::startAdding(int acc)
+{
+	beginInsertRows(QModelIndex(), acc, acc);
+}
+
+void AccountModel::startRemoving(int acc)
+{
+	beginRemoveRows(QModelIndex(), acc, acc);
+}
+
+void AccountModel::removingFinished()
+{
+	endRemoveRows();
+}
+
+void AccountModel::startResetting()
+{
+	beginResetModel();
+}
+
+void AccountModel::resettingFinished()
+{
+	endResetModel();
 }
 
 int AccountModel::columnCount(const QModelIndex &parent) const
@@ -293,17 +330,17 @@ QVariant AccountModel::data(const QModelIndex &index, int role) const
 	return QVariant();
 }
 
-/*
-void AccountModel::defaultChanged(BaseProfile *oldDef, BaseProfile *newDef)
+void AccountModel::itemChanged(int acc, int prof)
 {
-	if(oldDef)
+	auto changedAccount = index(acc, 0);
+	auto lastColumn = columnCount(QModelIndex()) - 1;
+	emit dataChanged(changedAccount, index(acc, lastColumn));
+
+	auto item = static_cast<BaseAccount *>(changedAccount.internalPointer());
+	if(item->size() > 1)
 	{
-		emitRowChanged(m_accounts.indexOf(oldDef));
+		auto changedProfile = index(prof, 0, changedAccount);
+		auto changedProfileB = index(prof, lastColumn, changedAccount);
+		emit dataChanged(changedProfile, changedProfileB);
 	}
-	if(newDef)
-	{
-		emitRowChanged(m_accounts.indexOf(newDef));
-	}
-	scheduleSave();
 }
-*/

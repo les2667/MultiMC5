@@ -43,22 +43,42 @@ void AccountStore::registerType(BaseAccountType * type)
 	Q_ASSERT(!m_types.contains(type->id()));
 	m_types.insert(type->id(), type);
 	m_typeStore.append(type);
-	connect(type, &BaseAccountType::defaultProfileChanged, this, &AccountStore::defaultChanged);
+	connect(type, &BaseAccountType::defaultProfileChanged, this, &AccountStore::defaultProfileChanged);
+	connect(type, &BaseAccountType::defaultAccountChanged, this, &AccountStore::defaultAccountChanged);
 }
 
-void AccountStore::defaultChanged(BaseProfile *oldDef, BaseProfile *newDef)
+void AccountStore::defaultAccountChanged(BaseAccount *oldDef, BaseAccount *newDef)
 {
-	/*
 	if(oldDef)
 	{
-		emitRowChanged(m_accounts.indexOf(oldDef));
+		auto accIndex = m_accounts.indexOf(oldDef);
+		emit itemChanged(accIndex, -1);
 	}
 	if(newDef)
 	{
-		emitRowChanged(m_accounts.indexOf(newDef));
+		auto accIndex = m_accounts.indexOf(newDef);
+		emit itemChanged(accIndex, -1);
 	}
 	scheduleSave();
-	*/
+}
+
+void AccountStore::defaultProfileChanged(BaseProfile *oldDef, BaseProfile *newDef)
+{
+	if(oldDef)
+	{
+		auto acc = oldDef->parent();
+		auto accIndex = m_accounts.indexOf(acc);
+		auto prof = acc->indexOf(oldDef);
+		emit itemChanged(accIndex, prof);
+	}
+	if(newDef)
+	{
+		auto acc = newDef->parent();
+		auto accIndex = m_accounts.indexOf(acc);
+		auto prof = acc->indexOf(newDef);
+		emit itemChanged(accIndex, prof);
+	}
+	scheduleSave();
 }
 
 QList<BaseAccount *> AccountStore::accountsForType(BaseAccountType *type) const
@@ -105,7 +125,9 @@ void AccountStore::registerAccount(BaseAccount *account)
 {
 	auto index = m_accounts.size();
 	// beginInsertRows(QModelIndex(), index, index);
+	emit aboutToAdd(index);
 	m_accounts.append(account);
+	emit addingFinished();
 	// endInsertRows();
 	// connect(account, &BaseAccount::changed, this, &AccountStore::accountChanged);
 	scheduleSave();
@@ -116,29 +138,23 @@ void AccountStore::unregisterAccount(BaseAccount *account)
 	auto index = m_accounts.indexOf(account);
 	Q_ASSERT(index > -1);
 
-	// beginRemoveRows(QModelIndex(), index, index);
-	// disconnect(account, &BaseAccount::changed, this, &AccountStore::accountChanged);
-
+	emit aboutToRemove(index);
 	account->unsetDefault();
 	delete account;
 	m_accounts.removeAt(index);
-	// endRemoveRows();
+	emit removalFinished();
 	scheduleSave();
 }
-
-/*
-void AccountStore::emitRowChanged(int row)
-{
-	emit dataChanged(index(row, 0), index(row, columnCount(QModelIndex()) - 1));
-}
-*/
 
 void AccountStore::accountChanged()
 {
-	// BaseAccount *account = qobject_cast<BaseAccount *>(sender());
-	// const int row = m_accounts.indexOf(account);
+	/*
+	BaseAccount *account = qobject_cast<BaseAccount *>(sender());
+	const int row = m_accounts.indexOf(account);
+	emit itemChanged(row, -1);
 	// emitRowChanged(row);
 	scheduleSave();
+	*/
 }
 
 void AccountStore::loadOldMultiMC(QJsonObject root)
@@ -148,7 +164,7 @@ void AccountStore::loadOldMultiMC(QJsonObject root)
 
 	qDebug() << "Old accounts.json file detected. Before migration:" << requireArray(root, "accounts").size() << "accounts";
 
-	// beginResetModel();
+	emit aboutToReset();
 
 	BaseAccount *def = nullptr;
 
@@ -178,12 +194,13 @@ void AccountStore::loadOldMultiMC(QJsonObject root)
 
 	// resave now so we save using the new format
 	saveNow();
-	// endResetModel();
+	emit resetFinished();
 }
 
 void AccountStore::loadMultiAuth(QJsonObject root)
 {
 	using namespace Json;
+	emit aboutToReset();
 	const auto accounts = requireIsArrayOf<QJsonObject>(root, "accounts");
 	for (const auto account : accounts)
 	{
@@ -199,6 +216,7 @@ void AccountStore::loadMultiAuth(QJsonObject root)
 			m_accounts.append(acc);
 		}
 	}
+	emit resetFinished();
 }
 
 bool AccountStore::doLoad(const QByteArray &data)

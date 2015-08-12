@@ -79,9 +79,22 @@ public:
 		return m_typeStore[index];
 	}
 
+signals:
+	void aboutToRemove(int accIndex);
+	void removalFinished();
+
+	void aboutToAdd(int accIndex);
+	void addingFinished();
+
+	void aboutToReset();
+	void resetFinished();
+
+	void itemChanged(int accIndex, int profIndex);
+
 private slots:
 	void accountChanged();
-	void defaultChanged(BaseProfile *oldDef, BaseProfile *newDef);
+	void defaultProfileChanged(BaseProfile *oldDef, BaseProfile *newDef);
+	void defaultAccountChanged(BaseAccount *oldDef, BaseAccount *newDef);
 
 private:
 	void loadOldMultiMC(QJsonObject root);

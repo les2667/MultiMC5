@@ -210,6 +210,10 @@ public: /* queries */
 	{
 		return m_profiles.size();
 	}
+	virtual int indexOf(BaseProfile *what) override
+	{
+		return m_profiles.indexOf((MojangProfile *) what);
+	}
 
 	//! Returns whether the account is NotVerified, Verified or Online
 	AccountStatus accountStatus() const;

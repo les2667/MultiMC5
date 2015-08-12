@@ -40,6 +40,10 @@ public:
 	{
 		return 0;
 	}
+	virtual int indexOf(BaseProfile *)
+	{
+		return -1;
+	}
 };
 class AsdfAccountType : public BaseAccountType
 {

@@ -46,6 +46,15 @@ private:
 	QVariant accountData(BaseAccount * account, int column, int role) const;
 	QVariant profileData(BaseProfile * profile, int column, int role) const;
 
+private slots:
+	void itemChanged(int acc, int prof);
+	void startRemoving(int acc);
+	void removingFinished();
+	void startAdding(int acc);
+	void addingFinished();
+	void startResetting();
+	void resettingFinished();
+
 private:
 	AccountStorePtr m_store;
 };

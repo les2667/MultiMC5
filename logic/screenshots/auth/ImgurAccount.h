@@ -41,6 +41,10 @@ public:
 	{
 		return nullptr;
 	}
+	virtual int indexOf(BaseProfile *) override
+	{
+		return -1;
+	}
 };
 
 class ImgurAccountType : public BaseAccountType

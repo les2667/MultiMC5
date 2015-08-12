@@ -9,15 +9,7 @@ bool BaseAccountType::notifyDefaultAccount(BaseAccount *account)
 		return false;
 	}
 	auto keep = m_defaultAccount;
-	if(m_defaultAccount)
-	{
-		m_defaultAccount->notifyDefault();
-	}
 	m_defaultAccount = account;
-	if(m_defaultAccount)
-	{
-		m_defaultAccount->notifyDefault();
-	}
 	emit defaultAccountChanged(keep, account);
 	return true;
 }
@@ -29,16 +21,8 @@ bool BaseAccountType::notifyDefaultProfile(BaseProfile *profile)
 		return false;
 	}
 	notifyDefaultAccount(profile? profile->parent(): nullptr);
-	if(m_defaultProfile)
-	{
-		m_defaultProfile->notifyDefault();
-	}
 	auto keep = m_defaultProfile;
 	m_defaultProfile = profile;
-	if(m_defaultProfile)
-	{
-		m_defaultProfile->notifyDefault();
-	}
 	emit defaultProfileChanged(keep, profile);
 	return true;
 }

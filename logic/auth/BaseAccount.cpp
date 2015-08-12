@@ -94,8 +94,3 @@ bool BaseAccount::isDefault() const
 {
 	return m_type->isDefault(this);
 }
-
-void BaseAccount::notifyDefault()
-{
-	// emit changed();
-}

@@ -39,9 +39,6 @@ public:
 
 	BaseAccount * parent();
 
-	// called by base account type
-	void notifyDefault();
-
 	Type getKind() final override
 	{
 		return Profile;

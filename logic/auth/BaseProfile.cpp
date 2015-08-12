@@ -22,7 +22,3 @@ BaseAccount *BaseProfile::parent()
 {
 	return m_parent;
 }
-
-void BaseProfile::notifyDefault()
-{
-}
