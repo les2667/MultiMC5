@@ -159,10 +159,6 @@ Task *MojangAccount::createLoginTask(const QString &username, const QString &pas
 Task *MojangAccount::createCheckTask(SessionPtr session)
 {
 	auto mojangSession = std::dynamic_pointer_cast<MojangAuthSession>(session);
-	if(mojangSession->access_token.isEmpty())
-	{
-		return nullptr;
-	}
 	return new RefreshTask(mojangSession, this);
 }
 
