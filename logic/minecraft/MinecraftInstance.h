@@ -4,6 +4,7 @@
 #include <QProcess>
 
 class ModList;
+class WorldList;
 
 class MinecraftInstance: public BaseInstance
 {
@@ -20,6 +21,10 @@ public:
 		return nullptr;
 	}
 	virtual std::shared_ptr<ModList> texturePackList() const
+	{
+		return nullptr;
+	}
+	virtual std::shared_ptr<WorldList> worldList() const
 	{
 		return nullptr;
 	}
