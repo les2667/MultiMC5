@@ -14,6 +14,7 @@
  */
 
 #include "ModListView.h"
+#include "CustomHeaderView.h"
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QPainter>
@@ -36,6 +37,7 @@ ModListView::ModListView ( QWidget* parent )
 	setDropIndicatorShown(true);
 	setDragEnabled(true);
 	setDragDropMode(QAbstractItemView::DropOnly);
+	setHeader(new CustomHeaderView(this));
 	viewport()->setAcceptDrops(true);
 }
 

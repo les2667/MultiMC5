@@ -228,6 +228,8 @@ SET(MULTIMC_SOURCES
 	# GUI - widgets
 	widgets/Common.cpp
 	widgets/Common.h
+	widgets/CustomHeaderView.cpp
+	widgets/CustomHeaderView.h
 	widgets/IconLabel.cpp
 	widgets/IconLabel.h
 	widgets/LabeledToolButton.cpp
